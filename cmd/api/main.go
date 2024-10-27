@@ -7,9 +7,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/G-Villarinho/social-network/cmd/api/handler"
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/database"
 	"github.com/G-Villarinho/social-network/pkg" // ajuste conforme necessário
+	"github.com/G-Villarinho/social-network/repository"
+	"github.com/G-Villarinho/social-network/service"
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -51,13 +54,22 @@ func main() {
 		log.Fatal("error to connect to redis: ", err)
 	}
 
-	pkg.Provide(di, func() (*gorm.DB, error) {
+	pkg.Provide(di, func(d *pkg.Di) (*gorm.DB, error) {
 		return db, nil
 	})
 
-	pkg.Provide(di, func() (*redis.Client, error) {
+	pkg.Provide(di, func(d *pkg.Di) (*redis.Client, error) {
 		return redisClient, nil
 	})
 
+	pkg.Provide(di, handler.NewUserHandler)
+
+	pkg.Provide(di, service.NewUserService)
+	pkg.Provide(di, service.NewSessionService)
+
+	pkg.Provide(di, repository.NewUserRepository)
+	pkg.Provide(di, repository.NewSessionRepository)
+
+	handler.SetupRoutes(e, di)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", config.Env.APIPort)))
 }

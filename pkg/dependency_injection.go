@@ -12,9 +12,9 @@ func NewDi() *Di {
 	}
 }
 
-func Provide[T any](d *Di, fn func() (T, error)) {
+func Provide[T any](d *Di, fn func(d *Di) (T, error)) {
 	do.Provide(d.injector, func(i *do.Injector) (T, error) {
-		return fn()
+		return fn(d)
 	})
 }
 

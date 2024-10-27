@@ -45,6 +45,7 @@ type User struct {
 type UserPayload struct {
 	FirstName string `json:"firstName" validate:"required,min=1,max=255"`
 	LastName  string `json:"lastName" validate:"required,min=1,max=255"`
+	Password  string `json:"password" validate:"required,strongpassword"`
 	Email     string `json:"email" validate:"required,email,max=255"`
 }
 
@@ -66,11 +67,12 @@ type UserHandler interface {
 }
 
 type UserService interface {
-	CreateUser(ctx context.Context, payload UserPayload) error
+	CreateUser(ctx context.Context, payload UserPayload) (string, error)
 }
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user User) error
+	GetUserByEmail(ctx context.Context, email string) (*User, error)
 }
 
 func (u *UserPayload) trim() {
@@ -108,16 +110,17 @@ func (u *User) BeforeUpdate(tx *gorm.DB) (err error) {
 	return
 }
 
-func (up *UserPayload) ToUser() User {
-	return User{
+func (up *UserPayload) ToUser(passwordHash string) *User {
+	return &User{
 		FirstName: up.FirstName,
 		LastName:  up.LastName,
 		Email:     up.Email,
+		Password:  passwordHash,
 	}
 }
 
-func (u *User) ToUserResponse() UserResponse {
-	return UserResponse{
+func (u *User) ToUserResponse() *UserResponse {
+	return &UserResponse{
 		ID:        u.ID.String(),
 		FirstName: u.FirstName,
 		LastName:  u.LastName,

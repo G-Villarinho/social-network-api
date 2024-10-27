@@ -23,7 +23,6 @@ func NewMysqlConnection(ctx context.Context) (*gorm.DB, error) {
 		_ = slqDB.Close()
 		return nil, err
 	}
-	defer slqDB.Close()
 
 	return db, nil
 }

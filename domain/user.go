@@ -66,6 +66,12 @@ type UserResponse struct {
 	Avatar    string `json:"avatar"`
 }
 
+type UserFollowerResponse struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Username  string `json:"username"`
+}
+
 type SignInPayload struct {
 	EmailOrUsername string `json:"emailOrUsername" validate:"required"`
 	Password        string `json:"password" validate:"required,min=8"`
@@ -150,6 +156,14 @@ func (u *User) ToUserResponse() *UserResponse {
 		LastName:  u.LastName,
 		Email:     u.Email,
 		Avatar:    u.Avatar,
+	}
+}
+
+func (u *User) ToUserFollowerResponse() *UserFollowerResponse {
+	return &UserFollowerResponse{
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Username:  u.Username,
 	}
 }
 

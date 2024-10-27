@@ -11,8 +11,12 @@ import (
 )
 
 var (
-	ErrUserCannotFollowItself = errors.New("user cannot follow itself")
-	ErrFollowerNotFound       = errors.New("follower not found")
+	ErrUserCannotFollowItself   = errors.New("user cannot follow itself")
+	ErrFollowerNotFound         = errors.New("follower not found")
+	ErrorFollowerAlreadyExist   = errors.New("follower already exist")
+	ErrUserCannotUnfollowItself = errors.New("user cannot unfollow itself")
+	ErrFollowerAlreadyExists    = errors.New("follower already exists")
+	ErrFollowingNotFound        = errors.New("following not found")
 )
 
 type Follower struct {
@@ -25,16 +29,37 @@ type Follower struct {
 	UpdatedAt  time.Time `gorm:"column:updatedAt;default:null"`
 }
 
+type FollowerResponse struct {
+	ID        uuid.UUID             `json:"id"`
+	User      *UserFollowerResponse `json:"user"`
+	CreatedAt time.Time             `json:"createdAt"`
+}
+
 type FollowerHandler interface {
 	FollowUser(ctx echo.Context) error
+	UnfollowUser(ctx echo.Context) error
+	GetFollowers(ctx echo.Context) error
 }
 
 type FollowerService interface {
 	FollowUser(ctx context.Context, followerId uuid.UUID) error
+	UnfollowUser(ctx context.Context, followerId uuid.UUID) error
+	GetFollowers(ctx context.Context) ([]*FollowerResponse, error)
 }
 
 type FollowerRepository interface {
 	CreateFollower(ctx context.Context, follower Follower) error
+	DeleteFollower(ctx context.Context, followerId uuid.UUID) error
+	GetFollower(ctx context.Context, userID uuid.UUID, followerId uuid.UUID) (*Follower, error)
+	GetFollowers(ctx context.Context, userID uuid.UUID) ([]*Follower, error)
+}
+
+func (f *Follower) ToFollowerResponse() *FollowerResponse {
+	return &FollowerResponse{
+		ID:        f.ID,
+		User:      f.Follower.ToUserFollowerResponse(),
+		CreatedAt: f.CreatedAt,
+	}
 }
 
 func (Follower) TableName() string {

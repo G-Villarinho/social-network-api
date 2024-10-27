@@ -50,6 +50,10 @@ func (f *followerHandler) FollowUser(ctx echo.Context) error {
 			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusNotFound, nil, "Not Found", "The follower does not exist.")
 		}
 
+		if err == domain.ErrFollowerAlreadyExists {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusConflict, nil, "Conflict", "The follower already exists.")
+		}
+
 		if err == domain.ErrUserCannotFollowItself {
 			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusConflict, nil, "Conflict", "The user cannot follow itself.")
 		}
@@ -58,4 +62,65 @@ func (f *followerHandler) FollowUser(ctx echo.Context) error {
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (f *followerHandler) UnfollowUser(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "UnfollowUser"),
+	)
+
+	followerID, err := uuid.Parse(ctx.Param("followerId"))
+	if err != nil {
+		log.Warn("Error to parse UUID", slog.String("error", err.Error()))
+		return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusBadRequest, nil, "Invalid UUID", "The ID provided is not a valid UUID.")
+	}
+
+	if err := f.followerService.UnfollowUser(ctx.Request().Context(), followerID); err != nil {
+		log.Error(err.Error())
+
+		if err == domain.ErrSessionNotFound {
+			return domain.AccessDeniedAPIErrorResponse(ctx)
+		}
+
+		if err == domain.ErrFollowerNotFound {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusNotFound, nil, "Not Found", "The follower does not exist.")
+		}
+
+		if err == domain.ErrFollowingNotFound {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusNotFound, nil, "Not Found", "The following does not exist.")
+		}
+
+		if err == domain.ErrUserCannotUnfollowItself {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusConflict, nil, "Conflict", "The user cannot unfollow itself.")
+		}
+
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (f *followerHandler) GetFollowers(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "GetFollowers"),
+	)
+
+	response, err := f.followerService.GetFollowers(ctx.Request().Context())
+	if err != nil {
+		log.Error(err.Error())
+
+		if err == domain.ErrSessionNotFound {
+			return domain.AccessDeniedAPIErrorResponse(ctx)
+		}
+
+		if err == domain.ErrUserNotFound {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusNotFound, nil, "Not Found", "The user does not exist.")
+		}
+
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 }

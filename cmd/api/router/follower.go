@@ -18,4 +18,6 @@ func setupFollowerRoutes(e *echo.Echo, di *pkg.Di) {
 	group := e.Group("/v1/followers", middleware.EnsureAuthenticated(di))
 
 	group.POST("/:followerId", userHandler.FollowUser)
+	group.DELETE("/:followerId", userHandler.UnfollowUser)
+
 }

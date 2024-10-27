@@ -52,7 +52,16 @@ func (f *followerService) FollowUser(ctx context.Context, followerId uuid.UUID) 
 		return domain.ErrFollowerNotFound
 	}
 
-	following := &domain.Follower{
+	following, err := f.followerRepository.GetFollower(ctx, session.UserID, followerId)
+	if err != nil {
+		return fmt.Errorf("error to get follower: %w", err)
+	}
+
+	if following != nil {
+		return domain.ErrFollowerAlreadyExists
+	}
+
+	following = &domain.Follower{
 		UserID:     session.UserID,
 		FollowerID: followerId,
 	}
@@ -62,4 +71,58 @@ func (f *followerService) FollowUser(ctx context.Context, followerId uuid.UUID) 
 	}
 
 	return nil
+}
+
+func (f *followerService) UnfollowUser(ctx context.Context, followerId uuid.UUID) error {
+	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
+	if !ok {
+		return domain.ErrSessionNotFound
+	}
+
+	if session.UserID == followerId {
+		return domain.ErrUserCannotUnfollowItself
+	}
+
+	follower, err := f.userRepository.GetUserByID(ctx, followerId)
+	if err != nil {
+		return fmt.Errorf("error to get follower by ID: %w", err)
+	}
+
+	if follower == nil {
+		return domain.ErrFollowerNotFound
+	}
+
+	following, err := f.followerRepository.GetFollower(ctx, session.UserID, followerId)
+	if err != nil {
+		return fmt.Errorf("error to get follower: %w", err)
+	}
+
+	if following == nil {
+		return domain.ErrFollowingNotFound
+	}
+
+	if err := f.followerRepository.DeleteFollower(ctx, followerId); err != nil {
+		return fmt.Errorf("error to delete follower: %w", err)
+	}
+
+	return nil
+}
+
+func (f *followerService) GetFollowers(ctx context.Context) ([]*domain.FollowerResponse, error) {
+	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
+	if !ok {
+		return nil, domain.ErrSessionNotFound
+	}
+
+	followers, err := f.followerRepository.GetFollowers(ctx, session.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("error to get followers: %w", err)
+	}
+
+	var followersResponse []*domain.FollowerResponse
+	for _, follower := range followers {
+		followersResponse = append(followersResponse, follower.ToFollowerResponse())
+	}
+
+	return followersResponse, nil
 }

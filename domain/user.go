@@ -62,6 +62,7 @@ type UserResponse struct {
 	ID        string `json:"id"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
+	Username  string `json:"username"`
 	Email     string `json:"email"`
 	Avatar    string `json:"avatar"`
 }
@@ -103,6 +104,7 @@ type UserRepository interface {
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
 	GetUserByEmailOrUsername(ctx context.Context, emailOrUsername string) (*User, error)
 	DeleteUser(ctx context.Context, ID uuid.UUID) error
+	GetUserByUsernameOrEmail(ctx context.Context, username, email string) (*User, error)
 }
 
 func (u *UserPayload) trim() {
@@ -144,6 +146,7 @@ func (up *UserPayload) ToUser(passwordHash string) *User {
 	return &User{
 		FirstName: up.FirstName,
 		LastName:  up.LastName,
+		Username:  up.Username,
 		Email:     up.Email,
 		Password:  passwordHash,
 	}
@@ -154,6 +157,7 @@ func (u *User) ToUserResponse() *UserResponse {
 		ID:        u.ID.String(),
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
+		Username:  u.Username,
 		Email:     u.Email,
 		Avatar:    u.Avatar,
 	}

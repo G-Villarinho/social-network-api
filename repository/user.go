@@ -112,3 +112,16 @@ func (u *userRepository) DeleteUser(ctx context.Context, ID uuid.UUID) error {
 
 	return nil
 }
+
+func (u *userRepository) GetUserByUsernameOrEmail(ctx context.Context, username, email string) (*domain.User, error) {
+	var user *domain.User
+
+	if err := u.db.WithContext(ctx).Where("username = ? OR email = ?", username, email).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return user, nil
+}

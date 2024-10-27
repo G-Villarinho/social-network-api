@@ -34,22 +34,19 @@ func NewUserService(di *pkg.Di) (domain.UserService, error) {
 }
 
 func (u *userService) CreateUser(ctx context.Context, payload domain.UserPayload) (string, error) {
-	user, err := u.userRepository.GetUserByEmail(ctx, payload.Email)
+	user, err := u.userRepository.GetUserByUsernameOrEmail(ctx, payload.Username, payload.Email)
 	if err != nil {
 		return "", fmt.Errorf("error to get user by email: %w", err)
 	}
 
 	if user != nil {
-		return "", domain.ErrEmailAlreadyRegister
-	}
+		if user.Email == payload.Email {
+			return "", domain.ErrEmailAlreadyRegister
+		}
 
-	user, err = u.userRepository.GetUserByUsername(ctx, payload.Username)
-	if err != nil {
-		return "", fmt.Errorf("error to get user by username: %w", err)
-	}
-
-	if user != nil {
-		return "", domain.ErrUsernameAlreadyExists
+		if user.Username == payload.Username {
+			return "", domain.ErrUsernameAlreadyExists
+		}
 	}
 
 	passwordHash, err := secure.HashPassword(payload.Password)

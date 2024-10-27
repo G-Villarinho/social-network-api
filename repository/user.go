@@ -6,6 +6,7 @@ import (
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -48,6 +49,19 @@ func (u *userRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 	var user *domain.User
 
 	if err := u.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (u *userRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	var user *domain.User
+
+	if err := u.db.WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}

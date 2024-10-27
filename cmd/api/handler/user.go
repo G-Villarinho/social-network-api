@@ -131,3 +131,26 @@ func (u *userHandler) SignOut(ctx echo.Context) error {
 
 	return ctx.NoContent(http.StatusOK)
 }
+
+func (u *userHandler) GetUser(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "GetUser"),
+	)
+
+	response, err := u.userService.GetUser(ctx.Request().Context())
+	if err != nil {
+		log.Error(err.Error())
+		if err == domain.ErrSessionNotFound {
+			return domain.AccessDeniedAPIErrorResponse(ctx)
+		}
+
+		if err == domain.ErrUserNotFound {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusNotFound, nil, "not_found", "User not found.")
+		}
+
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}

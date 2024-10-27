@@ -64,7 +64,7 @@ func (u *userService) CreateUser(ctx context.Context, payload domain.UserPayload
 func (u *userService) SignIn(ctx context.Context, payload domain.SignInPayload) (string, error) {
 	user, err := u.userRepository.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error to get user by email: %w", err)
 	}
 
 	if user == nil {
@@ -94,4 +94,22 @@ func (u *userService) SignOut(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (u *userService) GetUser(ctx context.Context) (*domain.UserResponse, error) {
+	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
+	if !ok {
+		return nil, domain.ErrSessionNotFound
+	}
+
+	user, err := u.userRepository.GetUserByID(ctx, session.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, domain.ErrUserNotFound
+	}
+
+	return user.ToUserResponse(), nil
 }

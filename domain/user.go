@@ -66,17 +66,20 @@ type UserHandler interface {
 	CreateUser(ctx echo.Context) error
 	SignIn(ctx echo.Context) error
 	SignOut(ctx echo.Context) error
+	GetUser(ctx echo.Context) error
 }
 
 type UserService interface {
 	CreateUser(ctx context.Context, payload UserPayload) (string, error)
 	SignIn(ctx context.Context, payload SignInPayload) (string, error)
 	SignOut(ctx context.Context) error
+	GetUser(ctx context.Context) (*UserResponse, error)
 }
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user User) error
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
 }
 
 func (u *UserPayload) trim() {

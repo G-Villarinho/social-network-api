@@ -113,3 +113,27 @@ func (u *userService) GetUser(ctx context.Context) (*domain.UserResponse, error)
 
 	return user.ToUserResponse(), nil
 }
+
+func (u *userService) UpdateUser(ctx context.Context, payload domain.UserUpdatePayload) error {
+	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
+	if !ok {
+		return domain.ErrSessionNotFound
+	}
+
+	user, err := u.userRepository.GetUserByID(ctx, session.UserID)
+	if err != nil {
+		return fmt.Errorf("error to get user by ID: %w", err)
+	}
+
+	if user == nil {
+		return domain.ErrUserNotFound
+	}
+
+	user.Update(payload)
+
+	if err := u.userRepository.UpdateUser(ctx, *user); err != nil {
+		return err
+	}
+
+	return nil
+}

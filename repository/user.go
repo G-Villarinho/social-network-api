@@ -70,3 +70,11 @@ func (u *userRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*domain
 
 	return user, nil
 }
+
+func (u *userRepository) UpdateUser(ctx context.Context, user domain.User) error {
+	if err := u.db.WithContext(ctx).Save(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

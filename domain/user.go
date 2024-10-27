@@ -49,6 +49,11 @@ type UserPayload struct {
 	Email     string `json:"email" validate:"required,email,max=255"`
 }
 
+type UserUpdatePayload struct {
+	FirstName string `json:"firstName" validate:"omitempty,min=1,max=255"`
+	LastName  string `json:"lastName" validate:"omitempty,min=1,max=255"`
+}
+
 type UserResponse struct {
 	ID        string `json:"id"`
 	FirstName string `json:"firstName"`
@@ -67,6 +72,7 @@ type UserHandler interface {
 	SignIn(ctx echo.Context) error
 	SignOut(ctx echo.Context) error
 	GetUser(ctx echo.Context) error
+	UpdateUser(ctx echo.Context) error
 }
 
 type UserService interface {
@@ -74,12 +80,14 @@ type UserService interface {
 	SignIn(ctx context.Context, payload SignInPayload) (string, error)
 	SignOut(ctx context.Context) error
 	GetUser(ctx context.Context) (*UserResponse, error)
+	UpdateUser(ctx context.Context, payload UserUpdatePayload) error
 }
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user User) error
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
+	UpdateUser(ctx context.Context, user User) error
 }
 
 func (u *UserPayload) trim() {
@@ -92,6 +100,11 @@ func (s *SignInPayload) trim() {
 	s.Email = strings.TrimSpace(strings.ToLower(s.Email))
 }
 
+func (uup *UserUpdatePayload) trim() {
+	uup.FirstName = strings.TrimSpace(uup.FirstName)
+	uup.LastName = strings.TrimSpace(uup.LastName)
+}
+
 func (u *UserPayload) Validate() ValidationErrors {
 	u.trim()
 	return ValidateStruct(u)
@@ -100,6 +113,16 @@ func (u *UserPayload) Validate() ValidationErrors {
 func (s *SignInPayload) Validate() ValidationErrors {
 	s.trim()
 	return ValidateStruct(s)
+}
+
+func (uup *UserUpdatePayload) Validate() ValidationErrors {
+	uup.trim()
+
+	if uup.FirstName == "" && uup.LastName == "" {
+		return ValidationErrors{"General": "firstName or lastName is required"}
+	}
+
+	return ValidateStruct(uup)
 }
 
 func (User) TableName() string {
@@ -133,5 +156,15 @@ func (u *User) ToUserResponse() *UserResponse {
 		LastName:  u.LastName,
 		Email:     u.Email,
 		Avatar:    u.Avatar,
+	}
+}
+
+func (u *User) Update(payload UserUpdatePayload) {
+	if payload.FirstName != "" {
+		u.FirstName = payload.FirstName
+	}
+
+	if payload.LastName != "" {
+		u.LastName = payload.LastName
 	}
 }

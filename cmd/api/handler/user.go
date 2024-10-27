@@ -154,3 +154,35 @@ func (u *userHandler) GetUser(ctx echo.Context) error {
 
 	return ctx.JSON(http.StatusOK, response)
 }
+
+func (u *userHandler) UpdateUser(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "UpdateUser"),
+	)
+
+	var payload domain.UserUpdatePayload
+	if err := jsoniter.NewDecoder(ctx.Request().Body).Decode(&payload); err != nil {
+		log.Warn("error to decode JSON payload", slog.String("error", err.Error()))
+		return domain.CannotBindPayloadAPIErrorResponse(ctx)
+	}
+
+	if validationErrors := payload.Validate(); validationErrors != nil {
+		return domain.NewValidationAPIErrorResponse(ctx, http.StatusUnprocessableEntity, validationErrors)
+	}
+
+	if err := u.userService.UpdateUser(ctx.Request().Context(), payload); err != nil {
+		log.Error(err.Error())
+		if err == domain.ErrSessionNotFound {
+			return domain.AccessDeniedAPIErrorResponse(ctx)
+		}
+
+		if err == domain.ErrUserNotFound {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusNotFound, nil, "not_found", "User not found.")
+		}
+
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}

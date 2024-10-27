@@ -8,6 +8,7 @@ import (
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -59,7 +60,7 @@ func (s *sessionService) GetSessionByToken(ctx context.Context, token string) (*
 
 	session, err := s.sessionRepository.GetSessionByUserID(ctx, sessionFromToken.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("error to get session for user ID %s: %w", sessionFromToken.UserID, err)
+		return nil, fmt.Errorf("error to get session for user ID: %w", err)
 	}
 
 	if session == nil {
@@ -71,6 +72,14 @@ func (s *sessionService) GetSessionByToken(ctx context.Context, token string) (*
 	}
 
 	return session, nil
+}
+
+func (s *sessionService) DeleteSession(ctx context.Context, userID uuid.UUID) error {
+	if err := s.sessionRepository.DeleteSession(ctx, userID); err != nil {
+		return fmt.Errorf("error to delete session for user ID: %w", err)
+	}
+
+	return nil
 }
 
 func (s *sessionService) createToken(user domain.User) (string, error) {

@@ -60,3 +60,38 @@ func (u *userService) CreateUser(ctx context.Context, payload domain.UserPayload
 
 	return token, nil
 }
+
+func (u *userService) SignIn(ctx context.Context, payload domain.SignInPayload) (string, error) {
+	user, err := u.userRepository.GetUserByEmail(ctx, payload.Email)
+	if err != nil {
+		return "", err
+	}
+
+	if user == nil {
+		return "", domain.ErrUserNotFound
+	}
+
+	if err := secure.CheckPassword(user.Password, payload.Password); err != nil {
+		return "", domain.ErrInvalidPassword
+	}
+
+	token, err := u.sessionService.CreateSession(ctx, *user)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func (u *userService) SignOut(ctx context.Context) error {
+	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
+	if !ok {
+		return domain.ErrSessionNotFound
+	}
+
+	if err := u.sessionService.DeleteSession(ctx, session.UserID); err != nil {
+		return err
+	}
+
+	return nil
+}

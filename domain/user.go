@@ -64,10 +64,14 @@ type SignInPayload struct {
 
 type UserHandler interface {
 	CreateUser(ctx echo.Context) error
+	SignIn(ctx echo.Context) error
+	SignOut(ctx echo.Context) error
 }
 
 type UserService interface {
 	CreateUser(ctx context.Context, payload UserPayload) (string, error)
+	SignIn(ctx context.Context, payload SignInPayload) (string, error)
+	SignOut(ctx context.Context) error
 }
 
 type UserRepository interface {

@@ -27,9 +27,11 @@ type Session struct {
 type SessionService interface {
 	CreateSession(ctx context.Context, user User) (string, error)
 	GetSessionByToken(ctx context.Context, token string) (*Session, error)
+	DeleteSession(ctx context.Context, userID uuid.UUID) error
 }
 
 type SessionRepository interface {
 	CreateSession(ctx context.Context, session Session) error
 	GetSessionByUserID(ctx context.Context, userID uuid.UUID) (*Session, error)
+	DeleteSession(ctx context.Context, userId uuid.UUID) error
 }

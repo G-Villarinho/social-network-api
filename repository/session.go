@@ -68,6 +68,14 @@ func (s *sessionRepository) GetSessionByUserID(ctx context.Context, userID uuid.
 	return &session, nil
 }
 
+func (s *sessionRepository) DeleteSession(ctx context.Context, userID uuid.UUID) error {
+	if err := s.redisClient.Del(ctx, s.getSessionKey(userID.String())).Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *sessionRepository) getSessionKey(userID string) string {
 	return fmt.Sprintf("session_%s", userID)
 }

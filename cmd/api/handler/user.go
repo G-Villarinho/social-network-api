@@ -40,6 +40,10 @@ func (u *userHandler) CreateUser(ctx echo.Context) error {
 		return domain.CannotBindPayloadAPIErrorResponse(ctx)
 	}
 
+	if validationErrors := payload.Validate(); validationErrors != nil {
+		return domain.NewValidationAPIErrorResponse(ctx, http.StatusUnprocessableEntity, validationErrors)
+	}
+
 	token, err := u.userService.CreateUser(ctx.Request().Context(), payload)
 	if err != nil {
 		log.Error(err.Error())
@@ -59,5 +63,71 @@ func (u *userHandler) CreateUser(ctx echo.Context) error {
 	}
 	ctx.SetCookie(cookie)
 
-	return ctx.JSON(http.StatusCreated, nil)
+	return ctx.NoContent(http.StatusCreated)
+}
+
+func (u *userHandler) SignIn(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "SignIn"),
+	)
+
+	var payload domain.SignInPayload
+	if err := jsoniter.NewDecoder(ctx.Request().Body).Decode(&payload); err != nil {
+		log.Warn("error to decode JSON payload", slog.String("error", err.Error()))
+		return domain.CannotBindPayloadAPIErrorResponse(ctx)
+	}
+
+	if validationErrors := payload.Validate(); validationErrors != nil {
+		return domain.NewValidationAPIErrorResponse(ctx, http.StatusUnprocessableEntity, validationErrors)
+	}
+
+	token, err := u.userService.SignIn(ctx.Request().Context(), payload)
+	if err != nil {
+		if err == domain.ErrUserNotFound || err == domain.ErrInvalidPassword {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusUnauthorized, nil, "Unauthorized", "Invalid email or password. Please check your credentials and try again.")
+		}
+
+		log.Error(err.Error())
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	cookie := &http.Cookie{
+		Name:     "x.Token",
+		Value:    token,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+	}
+	ctx.SetCookie(cookie)
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (u *userHandler) SignOut(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "SignOut"),
+	)
+
+	if err := u.userService.SignOut(ctx.Request().Context()); err != nil {
+		log.Error(err.Error())
+
+		if err == domain.ErrSessionNotFound {
+			return domain.AccessDeniedAPIErrorResponse(ctx)
+		}
+
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	cookie := &http.Cookie{
+		Name:     "x.Token",
+		Value:    "",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	}
+
+	ctx.SetCookie(cookie)
+
+	return ctx.NoContent(http.StatusOK)
 }

@@ -134,21 +134,6 @@ func (uup *UserUpdatePayload) Validate() ValidationErrors {
 	return ValidateStruct(uup)
 }
 
-func (User) TableName() string {
-	return "User"
-}
-
-func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
-	u.ID = uuid.New()
-	u.CreatedAt = time.Now().UTC()
-	return
-}
-
-func (u *User) BeforeUpdate(tx *gorm.DB) (err error) {
-	u.UpdatedAt = time.Now().UTC()
-	return
-}
-
 func (up *UserPayload) ToUser(passwordHash string) *User {
 	return &User{
 		FirstName: up.FirstName,
@@ -180,4 +165,19 @@ func (u *User) Update(payload UserUpdatePayload) {
 	if payload.Username != "" {
 		u.Username = payload.Username
 	}
+}
+
+func (User) TableName() string {
+	return "User"
+}
+
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	u.ID = uuid.New()
+	u.CreatedAt = time.Now().UTC()
+	return
+}
+
+func (u *User) BeforeUpdate(tx *gorm.DB) (err error) {
+	u.UpdatedAt = time.Now().UTC()
+	return
 }

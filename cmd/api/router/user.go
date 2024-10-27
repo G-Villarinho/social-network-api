@@ -20,4 +20,7 @@ func setupUserRoutes(e *echo.Echo, di *pkg.Di) {
 	group.POST("", userHandler.CreateUser)
 	group.POST("/sign-in", userHandler.SignIn)
 	group.POST("/sign-out", userHandler.SignOut, middleware.EnsureAuthenticated(di))
+	group.GET("/me", userHandler.GetUser, middleware.EnsureAuthenticated(di))
+	group.PUT("", userHandler.UpdateUser, middleware.EnsureAuthenticated(di))
+	group.DELETE("", userHandler.DeleteUser, middleware.EnsureAuthenticated(di))
 }

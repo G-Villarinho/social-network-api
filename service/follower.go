@@ -33,26 +33,26 @@ func NewFollowerService(di *pkg.Di) (domain.FollowerService, error) {
 	}, nil
 }
 
-func (f *followerService) FollowUser(ctx context.Context, followerId uuid.UUID) error {
+func (f *followerService) FollowUser(ctx context.Context, userId uuid.UUID) error {
 	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
 	if !ok {
 		return domain.ErrSessionNotFound
 	}
 
-	if session.UserID == followerId {
+	if session.UserID == userId {
 		return domain.ErrUserCannotFollowItself
 	}
 
-	follower, err := f.userRepository.GetUserByID(ctx, followerId)
+	user, err := f.userRepository.GetUserByID(ctx, userId)
 	if err != nil {
 		return fmt.Errorf("error to get follower by ID: %w", err)
 	}
 
-	if follower == nil {
+	if user == nil {
 		return domain.ErrFollowerNotFound
 	}
 
-	following, err := f.followerRepository.GetFollower(ctx, session.UserID, followerId)
+	following, err := f.followerRepository.GetFollower(ctx, userId, session.UserID)
 	if err != nil {
 		return fmt.Errorf("error to get follower: %w", err)
 	}
@@ -62,8 +62,8 @@ func (f *followerService) FollowUser(ctx context.Context, followerId uuid.UUID) 
 	}
 
 	following = &domain.Follower{
-		UserID:     session.UserID,
-		FollowerID: followerId,
+		UserID:     userId,
+		FollowerID: session.UserID,
 	}
 
 	if err := f.followerRepository.CreateFollower(ctx, *following); err != nil {
@@ -73,35 +73,35 @@ func (f *followerService) FollowUser(ctx context.Context, followerId uuid.UUID) 
 	return nil
 }
 
-func (f *followerService) UnfollowUser(ctx context.Context, followerId uuid.UUID) error {
+func (f *followerService) UnfollowUser(ctx context.Context, userID uuid.UUID) error {
 	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
 	if !ok {
 		return domain.ErrSessionNotFound
 	}
 
-	if session.UserID == followerId {
+	if session.UserID == userID {
 		return domain.ErrUserCannotUnfollowItself
 	}
 
-	follower, err := f.userRepository.GetUserByID(ctx, followerId)
+	user, err := f.userRepository.GetUserByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("error to get follower by ID: %w", err)
 	}
 
-	if follower == nil {
+	if user == nil {
 		return domain.ErrFollowerNotFound
 	}
 
-	following, err := f.followerRepository.GetFollower(ctx, session.UserID, followerId)
+	follower, err := f.followerRepository.GetFollower(ctx, userID, session.UserID)
 	if err != nil {
 		return fmt.Errorf("error to get follower: %w", err)
 	}
 
-	if following == nil {
+	if follower == nil {
 		return domain.ErrFollowingNotFound
 	}
 
-	if err := f.followerRepository.DeleteFollower(ctx, followerId); err != nil {
+	if err := f.followerRepository.DeleteFollower(ctx, follower.ID); err != nil {
 		return fmt.Errorf("error to delete follower: %w", err)
 	}
 

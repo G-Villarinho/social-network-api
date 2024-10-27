@@ -43,7 +43,7 @@ func (f *followerRepository) CreateFollower(ctx context.Context, follower domain
 }
 
 func (f *followerRepository) DeleteFollower(ctx context.Context, followerId uuid.UUID) error {
-	if err := f.db.WithContext(ctx).Where("followerId = ?", followerId).Delete(&domain.Follower{}).Error; err != nil {
+	if err := f.db.WithContext(ctx).Where("id = ?", followerId).Delete(&domain.Follower{}).Error; err != nil {
 		return err
 	}
 
@@ -66,7 +66,7 @@ func (f *followerRepository) GetFollower(ctx context.Context, userID uuid.UUID, 
 func (f *followerRepository) GetFollowers(ctx context.Context, userID uuid.UUID) ([]*domain.Follower, error) {
 	var followers []*domain.Follower
 
-	if err := f.db.WithContext(ctx).Preload("User").Where("followerId = ?", userID).Find(&followers).Error; err != nil {
+	if err := f.db.WithContext(ctx).Preload("Follower").Where("userId = ?", userID).Find(&followers).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
@@ -80,7 +80,7 @@ func (f *followerRepository) GetFollowers(ctx context.Context, userID uuid.UUID)
 func (f *followerRepository) GetFollowings(ctx context.Context, userID uuid.UUID) ([]*domain.Follower, error) {
 	var followings []*domain.Follower
 
-	if err := f.db.WithContext(ctx).Preload("Follower").Where("userId = ?", userID).Find(&followings).Error; err != nil {
+	if err := f.db.WithContext(ctx).Preload("User").Where("followerId = ?", userID).Find(&followings).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}

@@ -33,13 +33,13 @@ func (f *followerHandler) FollowUser(ctx echo.Context) error {
 		slog.String("func", "FollowUser"),
 	)
 
-	followerID, err := uuid.Parse(ctx.Param("followerId"))
+	userID, err := uuid.Parse(ctx.Param("userId"))
 	if err != nil {
 		log.Warn("Error to parse UUID", slog.String("error", err.Error()))
 		return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusBadRequest, nil, "Invalid UUID", "The ID provided is not a valid UUID.")
 	}
 
-	if err := f.followerService.FollowUser(ctx.Request().Context(), followerID); err != nil {
+	if err := f.followerService.FollowUser(ctx.Request().Context(), userID); err != nil {
 		log.Error(err.Error())
 
 		if err == domain.ErrSessionNotFound {
@@ -70,7 +70,7 @@ func (f *followerHandler) UnfollowUser(ctx echo.Context) error {
 		slog.String("func", "UnfollowUser"),
 	)
 
-	followerID, err := uuid.Parse(ctx.Param("followerId"))
+	followerID, err := uuid.Parse(ctx.Param("userId"))
 	if err != nil {
 		log.Warn("Error to parse UUID", slog.String("error", err.Error()))
 		return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusBadRequest, nil, "Invalid UUID", "The ID provided is not a valid UUID.")

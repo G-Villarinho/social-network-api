@@ -43,8 +43,8 @@ type FollowerHandler interface {
 }
 
 type FollowerService interface {
-	FollowUser(ctx context.Context, followerId uuid.UUID) error
-	UnfollowUser(ctx context.Context, followerId uuid.UUID) error
+	FollowUser(ctx context.Context, userID uuid.UUID) error
+	UnfollowUser(ctx context.Context, userID uuid.UUID) error
 	GetFollowers(ctx context.Context) ([]*FollowerResponse, error)
 	GetFollowings(ctx context.Context) ([]*FollowerResponse, error)
 }
@@ -58,11 +58,18 @@ type FollowerRepository interface {
 }
 
 func (f *Follower) ToFollowerResponse() *FollowerResponse {
-	return &FollowerResponse{
+	response := &FollowerResponse{
 		ID:        f.ID,
-		User:      f.Follower.ToUserFollowerResponse(),
 		CreatedAt: f.CreatedAt,
 	}
+
+	if f.Follower != (User{}) {
+		response.User = f.Follower.ToUserFollowerResponse()
+	} else if f.User != (User{}) {
+		response.User = f.User.ToUserFollowerResponse()
+	}
+
+	return response
 }
 
 func (Follower) TableName() string {

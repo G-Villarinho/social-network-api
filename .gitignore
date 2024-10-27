@@ -4,3 +4,4 @@ tmp/
 .idea
 .out
 *.pem
+*.exe

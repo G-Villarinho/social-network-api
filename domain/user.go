@@ -68,9 +68,10 @@ type UserResponse struct {
 }
 
 type UserFollowerResponse struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Username  string `json:"username"`
+	Id        uuid.UUID `json:"id"`
+	FirstName string    `json:"firstName"`
+	LastName  string    `json:"lastName"`
+	Username  string    `json:"username"`
 }
 
 type SignInPayload struct {
@@ -142,6 +143,15 @@ func (uup *UserUpdatePayload) Validate() ValidationErrors {
 	return ValidateStruct(uup)
 }
 
+func (u *User) ToUserFollowerResponse() *UserFollowerResponse {
+	return &UserFollowerResponse{
+		Id:        u.ID,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Username:  u.Username,
+	}
+}
+
 func (up *UserPayload) ToUser(passwordHash string) *User {
 	return &User{
 		FirstName: up.FirstName,
@@ -160,14 +170,6 @@ func (u *User) ToUserResponse() *UserResponse {
 		Username:  u.Username,
 		Email:     u.Email,
 		Avatar:    u.Avatar,
-	}
-}
-
-func (u *User) ToUserFollowerResponse() *UserFollowerResponse {
-	return &UserFollowerResponse{
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Username:  u.Username,
 	}
 }
 

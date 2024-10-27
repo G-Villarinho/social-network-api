@@ -10,16 +10,16 @@ import (
 )
 
 func setupFollowerRoutes(e *echo.Echo, di *pkg.Di) {
-	userHandler, err := pkg.Invoke[domain.FollowerHandler](di)
+	followerHandler, err := pkg.Invoke[domain.FollowerHandler](di)
 	if err != nil {
 		log.Fatal("error to create follower handler: ", err)
 	}
 
 	group := e.Group("/v1/followers", middleware.EnsureAuthenticated(di))
 
-	group.POST("/:userId", userHandler.FollowUser)
-	group.DELETE("/:userId", userHandler.UnfollowUser)
-	group.GET("", userHandler.GetFollowers)
-	group.GET("/fowllings", userHandler.GetFollowings)
+	group.POST("/:userId", followerHandler.FollowUser)
+	group.DELETE("/:userId", followerHandler.UnfollowUser)
+	group.GET("", followerHandler.GetFollowers)
+	group.GET("/fowllings", followerHandler.GetFollowings)
 
 }

@@ -64,13 +64,16 @@ func main() {
 	})
 
 	pkg.Provide(di, handler.NewFollowerHandler)
+	pkg.Provide(di, handler.NewPostHandler)
 	pkg.Provide(di, handler.NewUserHandler)
 
 	pkg.Provide(di, service.NewFollowerService)
+	pkg.Provide(di, service.NewPostService)
 	pkg.Provide(di, service.NewUserService)
 	pkg.Provide(di, service.NewSessionService)
 
 	pkg.Provide(di, repository.NewFollowerRepository)
+	pkg.Provide(di, repository.NewPostRepository)
 	pkg.Provide(di, repository.NewUserRepository)
 	pkg.Provide(di, repository.NewSessionRepository)
 

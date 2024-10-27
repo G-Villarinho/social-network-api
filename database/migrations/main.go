@@ -23,6 +23,7 @@ func main() {
 	if err := db.AutoMigrate(
 		&domain.User{},
 		&domain.Follower{},
+		&domain.Post{},
 	); err != nil {
 		log.Fatal("error to migrate: ", err)
 	}

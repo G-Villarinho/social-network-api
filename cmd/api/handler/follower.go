@@ -29,7 +29,7 @@ func NewFollowerHandler(di *pkg.Di) (domain.FollowerHandler, error) {
 
 func (f *followerHandler) FollowUser(ctx echo.Context) error {
 	log := slog.With(
-		slog.String("handler", "user"),
+		slog.String("handler", "follower"),
 		slog.String("func", "FollowUser"),
 	)
 
@@ -66,7 +66,7 @@ func (f *followerHandler) FollowUser(ctx echo.Context) error {
 
 func (f *followerHandler) UnfollowUser(ctx echo.Context) error {
 	log := slog.With(
-		slog.String("handler", "user"),
+		slog.String("handler", "follower"),
 		slog.String("func", "UnfollowUser"),
 	)
 
@@ -103,7 +103,7 @@ func (f *followerHandler) UnfollowUser(ctx echo.Context) error {
 
 func (f *followerHandler) GetFollowers(ctx echo.Context) error {
 	log := slog.With(
-		slog.String("handler", "user"),
+		slog.String("handler", "follower"),
 		slog.String("func", "GetFollowers"),
 	)
 
@@ -127,7 +127,7 @@ func (f *followerHandler) GetFollowers(ctx echo.Context) error {
 
 func (f *followerHandler) GetFollowings(ctx echo.Context) error {
 	log := slog.With(
-		slog.String("handler", "user"),
+		slog.String("handler", "follower"),
 		slog.String("func", "GetFollowings"),
 	)
 

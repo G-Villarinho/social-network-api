@@ -8,4 +8,5 @@ import (
 func SetupRoutes(e *echo.Echo, di *pkg.Di) {
 	setupUserRoutes(e, di)
 	setupFollowerRoutes(e, di)
+	setupPostRoutes(e, di)
 }

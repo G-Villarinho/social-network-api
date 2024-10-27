@@ -1,0 +1,127 @@
+package domain
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
+)
+
+type statusType string
+
+var (
+	ErrUserNotFound             = errors.New("user not found")
+	ErrEmailAlreadyRegister     = errors.New("email already exists")
+	ErrInvalidPassword          = errors.New("invalid password")
+	ErrUserNotFoundInContext    = errors.New("user not found in context")
+	ErrHashExpired              = errors.New("the 2FA hash has expired")
+	ErrCodeOTPExpired           = errors.New("the code OTP has expired")
+	ErrCodeOTPWrong             = errors.New("the code OTP is wrong")
+	ErrEmailConfirmationPending = errors.New("email confirmation is pending")
+)
+
+const (
+	Active   statusType = "active"
+	Inactive statusType = "inactive"
+	Block    statusType = "block"
+)
+
+type User struct {
+	ID        uuid.UUID  `gorm:"column:id;type:char(36);primaryKey"`
+	FirstName string     `gorm:"column:firstName;type:varchar(255);not null"`
+	LastName  string     `gorm:"column:lastName;type:varchar(255);not null"`
+	Email     string     `gorm:"column:email;type:varchar(255);uniqueIndex;not null"`
+	Password  string     `gorm:"column:password;type:varchar(255);not null"`
+	Avatar    string     `gorm:"column:avatar;type:varchar(255);default:null"`
+	Status    statusType `gorm:"type:enum('active','inactive','block');default:'active';index"`
+	CreatedAt time.Time  `gorm:"column:createdAt;not null"`
+	UpdatedAt time.Time  `gorm:"column:updatedAt;default:null"`
+}
+
+type UserPayload struct {
+	FirstName string `json:"firstName" validate:"required,min=1,max=255"`
+	LastName  string `json:"lastName" validate:"required,min=1,max=255"`
+	Email     string `json:"email" validate:"required,email,max=255"`
+}
+
+type UserResponse struct {
+	ID        string `json:"id"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+	Avatar    string `json:"avatar"`
+}
+
+type SignInPayload struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
+}
+
+type UserHandler interface {
+	CreateUser(ctx echo.Context) error
+}
+
+type UserService interface {
+	CreateUser(ctx context.Context, payload UserPayload) error
+}
+
+type UserRepository interface {
+	CreateUser(ctx context.Context, user User) error
+}
+
+func (u *UserPayload) trim() {
+	u.FirstName = strings.TrimSpace(u.FirstName)
+	u.LastName = strings.TrimSpace(u.LastName)
+	u.Email = strings.TrimSpace(strings.ToLower(u.Email))
+}
+
+func (s *SignInPayload) trim() {
+	s.Email = strings.TrimSpace(strings.ToLower(s.Email))
+}
+
+func (u *UserPayload) Validate() ValidationErrors {
+	u.trim()
+	return ValidateStruct(u)
+}
+
+func (s *SignInPayload) Validate() ValidationErrors {
+	s.trim()
+	return ValidateStruct(s)
+}
+
+func (User) TableName() string {
+	return "User"
+}
+
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	u.ID = uuid.New()
+	u.CreatedAt = time.Now().UTC()
+	return
+}
+
+func (u *User) BeforeUpdate(tx *gorm.DB) (err error) {
+	u.UpdatedAt = time.Now().UTC()
+	return
+}
+
+func (up *UserPayload) ToUser() User {
+	return User{
+		FirstName: up.FirstName,
+		LastName:  up.LastName,
+		Email:     up.Email,
+	}
+}
+
+func (u *User) ToUserResponse() UserResponse {
+	return UserResponse{
+		ID:        u.ID.String(),
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Email:     u.Email,
+		Avatar:    u.Avatar,
+	}
+}

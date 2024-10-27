@@ -1,0 +1,6 @@
+tmp/
+.env
+.vscode
+.idea
+.out
+.pem

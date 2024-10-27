@@ -186,3 +186,30 @@ func (u *userHandler) UpdateUser(ctx echo.Context) error {
 
 	return ctx.NoContent(http.StatusOK)
 }
+
+func (u *userHandler) DeleteUser(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "DeleteUser"),
+	)
+
+	if err := u.userService.DeleteUser(ctx.Request().Context()); err != nil {
+		log.Error(err.Error())
+		if err == domain.ErrSessionNotFound {
+			return domain.AccessDeniedAPIErrorResponse(ctx)
+		}
+
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	cookie := &http.Cookie{
+		Name:     "x.Token",
+		Value:    "",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	}
+
+	ctx.SetCookie(cookie)
+
+	return ctx.NoContent(http.StatusOK)
+}

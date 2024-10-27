@@ -77,6 +77,7 @@ type UserHandler interface {
 	SignOut(ctx echo.Context) error
 	GetUser(ctx echo.Context) error
 	UpdateUser(ctx echo.Context) error
+	DeleteUser(ctx echo.Context) error
 }
 
 type UserService interface {
@@ -85,15 +86,17 @@ type UserService interface {
 	SignOut(ctx context.Context) error
 	GetUser(ctx context.Context) (*UserResponse, error)
 	UpdateUser(ctx context.Context, payload UserUpdatePayload) error
+	DeleteUser(ctx context.Context) error
 }
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user User) error
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
+	GetUserByID(ctx context.Context, ID uuid.UUID) (*User, error)
 	UpdateUser(ctx context.Context, user User) error
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
 	GetUserByEmailOrUsername(ctx context.Context, emailOrUsername string) (*User, error)
+	DeleteUser(ctx context.Context, ID uuid.UUID) error
 }
 
 func (u *UserPayload) trim() {

@@ -156,3 +156,20 @@ func (u *userService) UpdateUser(ctx context.Context, payload domain.UserUpdateP
 
 	return nil
 }
+
+func (u *userService) DeleteUser(ctx context.Context) error {
+	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
+	if !ok {
+		return domain.ErrSessionNotFound
+	}
+
+	if err := u.userRepository.DeleteUser(ctx, session.UserID); err != nil {
+		return err
+	}
+
+	if err := u.sessionService.DeleteSession(ctx, session.UserID); err != nil {
+		return err
+	}
+
+	return nil
+}

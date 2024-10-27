@@ -58,10 +58,10 @@ func (u *userRepository) GetUserByEmail(ctx context.Context, email string) (*dom
 	return user, nil
 }
 
-func (u *userRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+func (u *userRepository) GetUserByID(ctx context.Context, ID uuid.UUID) (*domain.User, error) {
 	var user *domain.User
 
-	if err := u.db.WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
+	if err := u.db.WithContext(ctx).Where("id = ?", ID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
@@ -103,4 +103,12 @@ func (u *userRepository) GetUserByEmailOrUsername(ctx context.Context, emailOrUs
 	}
 
 	return user, nil
+}
+
+func (u *userRepository) DeleteUser(ctx context.Context, ID uuid.UUID) error {
+	if err := u.db.WithContext(ctx).Where("id = ?", ID).Delete(&domain.User{}).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

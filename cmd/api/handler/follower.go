@@ -124,3 +124,27 @@ func (f *followerHandler) GetFollowers(ctx echo.Context) error {
 
 	return ctx.JSON(http.StatusOK, response)
 }
+
+func (f *followerHandler) GetFollowings(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "GetFollowings"),
+	)
+
+	response, err := f.followerService.GetFollowings(ctx.Request().Context())
+	if err != nil {
+		log.Error(err.Error())
+
+		if err == domain.ErrSessionNotFound {
+			return domain.AccessDeniedAPIErrorResponse(ctx)
+		}
+
+		if err == domain.ErrUserNotFound {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusNotFound, nil, "Not Found", "The user does not exist.")
+		}
+
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}

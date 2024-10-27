@@ -76,3 +76,17 @@ func (f *followerRepository) GetFollowers(ctx context.Context, userID uuid.UUID)
 
 	return followers, nil
 }
+
+func (f *followerRepository) GetFollowings(ctx context.Context, userID uuid.UUID) ([]*domain.Follower, error) {
+	var followings []*domain.Follower
+
+	if err := f.db.WithContext(ctx).Preload("Follower").Where("userId = ?", userID).Find(&followings).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return followings, nil
+}

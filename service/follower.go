@@ -119,10 +119,37 @@ func (f *followerService) GetFollowers(ctx context.Context) ([]*domain.FollowerR
 		return nil, fmt.Errorf("error to get followers: %w", err)
 	}
 
+	if followers == nil {
+		return nil, domain.ErrFollowerNotFound
+	}
+
 	var followersResponse []*domain.FollowerResponse
 	for _, follower := range followers {
 		followersResponse = append(followersResponse, follower.ToFollowerResponse())
 	}
 
 	return followersResponse, nil
+}
+
+func (f *followerService) GetFollowings(ctx context.Context) ([]*domain.FollowerResponse, error) {
+	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
+	if !ok {
+		return nil, domain.ErrSessionNotFound
+	}
+
+	following, err := f.followerRepository.GetFollowings(ctx, session.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("error to get following: %w", err)
+	}
+
+	if following == nil {
+		return nil, domain.ErrFollowingNotFound
+	}
+
+	var followingResponse []*domain.FollowerResponse
+	for _, follower := range following {
+		followingResponse = append(followingResponse, follower.ToFollowerResponse())
+	}
+
+	return followingResponse, nil
 }

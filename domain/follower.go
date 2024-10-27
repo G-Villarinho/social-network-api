@@ -39,12 +39,14 @@ type FollowerHandler interface {
 	FollowUser(ctx echo.Context) error
 	UnfollowUser(ctx echo.Context) error
 	GetFollowers(ctx echo.Context) error
+	GetFollowings(ctx echo.Context) error
 }
 
 type FollowerService interface {
 	FollowUser(ctx context.Context, followerId uuid.UUID) error
 	UnfollowUser(ctx context.Context, followerId uuid.UUID) error
 	GetFollowers(ctx context.Context) ([]*FollowerResponse, error)
+	GetFollowings(ctx context.Context) ([]*FollowerResponse, error)
 }
 
 type FollowerRepository interface {
@@ -52,6 +54,7 @@ type FollowerRepository interface {
 	DeleteFollower(ctx context.Context, followerId uuid.UUID) error
 	GetFollower(ctx context.Context, userID uuid.UUID, followerId uuid.UUID) (*Follower, error)
 	GetFollowers(ctx context.Context, userID uuid.UUID) ([]*Follower, error)
+	GetFollowings(ctx context.Context, userID uuid.UUID) ([]*Follower, error)
 }
 
 func (f *Follower) ToFollowerResponse() *FollowerResponse {

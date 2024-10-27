@@ -19,5 +19,7 @@ func setupFollowerRoutes(e *echo.Echo, di *pkg.Di) {
 
 	group.POST("/:followerId", userHandler.FollowUser)
 	group.DELETE("/:followerId", userHandler.UnfollowUser)
+	group.GET("", userHandler.GetFollowers)
+	group.GET("/fowllings", userHandler.GetFollowers)
 
 }

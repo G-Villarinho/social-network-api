@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/G-Villarinho/social-network/cmd/api/handler"
+	"github.com/G-Villarinho/social-network/cmd/api/router"
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/database"
 	"github.com/G-Villarinho/social-network/pkg" // ajuste conforme necessário
@@ -70,6 +71,6 @@ func main() {
 	pkg.Provide(di, repository.NewUserRepository)
 	pkg.Provide(di, repository.NewSessionRepository)
 
-	handler.SetupRoutes(e, di)
+	router.SetupRoutes(e, di)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", config.Env.APIPort)))
 }

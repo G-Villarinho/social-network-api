@@ -36,11 +36,20 @@ func NewUserService(di *pkg.Di) (domain.UserService, error) {
 func (u *userService) CreateUser(ctx context.Context, payload domain.UserPayload) (string, error) {
 	user, err := u.userRepository.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error to get user by email: %w", err)
 	}
 
 	if user != nil {
 		return "", domain.ErrEmailAlreadyRegister
+	}
+
+	user, err = u.userRepository.GetUserByUsername(ctx, payload.Username)
+	if err != nil {
+		return "", fmt.Errorf("error to get user by username: %w", err)
+	}
+
+	if user != nil {
+		return "", domain.ErrUsernameAlreadyExists
 	}
 
 	passwordHash, err := secure.HashPassword(payload.Password)
@@ -62,9 +71,9 @@ func (u *userService) CreateUser(ctx context.Context, payload domain.UserPayload
 }
 
 func (u *userService) SignIn(ctx context.Context, payload domain.SignInPayload) (string, error) {
-	user, err := u.userRepository.GetUserByEmail(ctx, payload.Email)
+	user, err := u.userRepository.GetUserByEmailOrUsername(ctx, payload.EmailOrUsername)
 	if err != nil {
-		return "", fmt.Errorf("error to get user by email: %w", err)
+		return "", fmt.Errorf("error to get user by email or username: %w", err)
 	}
 
 	if user == nil {

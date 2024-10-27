@@ -22,6 +22,7 @@ var (
 	ErrCodeOTPExpired           = errors.New("the code OTP has expired")
 	ErrCodeOTPWrong             = errors.New("the code OTP is wrong")
 	ErrEmailConfirmationPending = errors.New("email confirmation is pending")
+	ErrUsernameAlreadyExists    = errors.New("username already exists")
 )
 
 const (
@@ -34,6 +35,7 @@ type User struct {
 	ID        uuid.UUID  `gorm:"column:id;type:char(36);primaryKey"`
 	FirstName string     `gorm:"column:firstName;type:varchar(255);not null"`
 	LastName  string     `gorm:"column:lastName;type:varchar(255);not null"`
+	Username  string     `gorm:"column:username;type:varchar(20);uniqueIndex;not null"`
 	Email     string     `gorm:"column:email;type:varchar(255);uniqueIndex;not null"`
 	Password  string     `gorm:"column:password;type:varchar(255);not null"`
 	Avatar    string     `gorm:"column:avatar;type:varchar(255);default:null"`
@@ -43,8 +45,9 @@ type User struct {
 }
 
 type UserPayload struct {
-	FirstName string `json:"firstName" validate:"required,min=1,max=255"`
-	LastName  string `json:"lastName" validate:"required,min=1,max=255"`
+	FirstName string `json:"firstName" validate:"required,max=255"`
+	LastName  string `json:"lastName" validate:"required,max=255"`
+	Username  string `json:"username" validate:"required,username,min=3,max=20"`
 	Password  string `json:"password" validate:"required,strongpassword"`
 	Email     string `json:"email" validate:"required,email,max=255"`
 }
@@ -63,8 +66,8 @@ type UserResponse struct {
 }
 
 type SignInPayload struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=8"`
+	EmailOrUsername string `json:"emailOrUsername" validate:"required"`
+	Password        string `json:"password" validate:"required,min=8"`
 }
 
 type UserHandler interface {
@@ -88,6 +91,8 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
 	UpdateUser(ctx context.Context, user User) error
+	GetUserByUsername(ctx context.Context, username string) (*User, error)
+	GetUserByEmailOrUsername(ctx context.Context, emailOrUsername string) (*User, error)
 }
 
 func (u *UserPayload) trim() {
@@ -97,7 +102,7 @@ func (u *UserPayload) trim() {
 }
 
 func (s *SignInPayload) trim() {
-	s.Email = strings.TrimSpace(strings.ToLower(s.Email))
+	s.EmailOrUsername = strings.TrimSpace(strings.ToLower(s.EmailOrUsername))
 }
 
 func (uup *UserUpdatePayload) trim() {

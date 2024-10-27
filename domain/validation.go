@@ -17,6 +17,7 @@ var ValidationMessages = ValidationErrors{
 	"gt":              "The value must be greater than zero",
 	"datetime":        "Invalid birth date",
 	StrongPasswordTag: "Password must be at least 8 characters long, contain an uppercase letter, a number, and a special character",
+	UsernameTag:       "Username must be between 3 and 20 characters and can only contain lowercase letters, numbers, and the characters ._-",
 }
 
 func ValidateStruct(s any) ValidationErrors {

@@ -78,3 +78,29 @@ func (u *userRepository) UpdateUser(ctx context.Context, user domain.User) error
 
 	return nil
 }
+
+func (u *userRepository) GetUserByUsername(ctx context.Context, username string) (*domain.User, error) {
+	var user *domain.User
+
+	if err := u.db.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (u *userRepository) GetUserByEmailOrUsername(ctx context.Context, emailOrUsername string) (*domain.User, error) {
+	var user *domain.User
+
+	if err := u.db.WithContext(ctx).Where("email = ? OR username = ?", emailOrUsername, emailOrUsername).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return user, nil
+}

@@ -3,6 +3,7 @@ package domain
 import (
 	"mime/multipart"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,7 @@ import (
 const (
 	StrongPasswordTag = "strongpassword"
 	ValidateImagesTag = "validateImages"
+	UsernameTag       = "username"
 	General           = "general"
 	MaxImageSize      = 5 * 1024 * 1024
 )
@@ -30,6 +32,10 @@ func SetupCustomValidations(validator *validator.Validate) error {
 	}
 
 	if err := validator.RegisterValidation(ValidateImagesTag, imageFileValidator); err != nil {
+		return err
+	}
+
+	if err := validator.RegisterValidation(UsernameTag, usernameValidator); err != nil {
 		return err
 	}
 
@@ -71,6 +77,27 @@ func imageFileValidator(fl validator.FieldLevel) bool {
 		if file.Size > MaxImageSize {
 			return false
 		}
+	}
+
+	return true
+}
+
+func usernameValidator(fl validator.FieldLevel) bool {
+	username := fl.Field().String()
+
+	if len(username) < 3 || len(username) > 20 {
+		return false
+	}
+
+	pattern := `^[a-z0-9._-]+$`
+	re := regexp.MustCompile(pattern)
+
+	if !re.MatchString(username) {
+		return false
+	}
+
+	if strings.Contains(username, " ") {
+		return false
 	}
 
 	return true

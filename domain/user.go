@@ -55,6 +55,7 @@ type UserPayload struct {
 type UserUpdatePayload struct {
 	FirstName string `json:"firstName" validate:"omitempty,min=1,max=255"`
 	LastName  string `json:"lastName" validate:"omitempty,min=1,max=255"`
+	Username  string `json:"username" validate:"omitempty,username,min=3,max=20"`
 }
 
 type UserResponse struct {
@@ -123,8 +124,8 @@ func (s *SignInPayload) Validate() ValidationErrors {
 func (uup *UserUpdatePayload) Validate() ValidationErrors {
 	uup.trim()
 
-	if uup.FirstName == "" && uup.LastName == "" {
-		return ValidationErrors{"General": "firstName or lastName is required"}
+	if uup.FirstName == "" && uup.LastName == "" && uup.Username == "" {
+		return ValidationErrors{"General": "firstName or lastName or username is required"}
 	}
 
 	return ValidateStruct(uup)
@@ -171,5 +172,9 @@ func (u *User) Update(payload UserUpdatePayload) {
 
 	if payload.LastName != "" {
 		u.LastName = payload.LastName
+	}
+
+	if payload.Username != "" {
+		u.Username = payload.Username
 	}
 }

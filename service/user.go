@@ -134,12 +134,22 @@ func (u *userService) UpdateUser(ctx context.Context, payload domain.UserUpdateP
 		return fmt.Errorf("error to get user by ID: %w", err)
 	}
 
+	if payload.Username != "" {
+		username, err := u.userRepository.GetUserByUsername(ctx, payload.Username)
+		if err != nil {
+			return fmt.Errorf("error to get user by username: %w", err)
+		}
+
+		if username != nil {
+			return domain.ErrUsernameAlreadyExists
+		}
+	}
+
 	if user == nil {
 		return domain.ErrUserNotFound
 	}
 
 	user.Update(payload)
-
 	if err := u.userRepository.UpdateUser(ctx, *user); err != nil {
 		return err
 	}

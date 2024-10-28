@@ -162,3 +162,27 @@ func (p *postRepository) HasUserLikedPost(ctx context.Context, ID uuid.UUID, use
 
 	return true, nil
 }
+
+func (p *postRepository) UnLikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error {
+	tx := p.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if err := tx.Where("postId = ? AND userId = ?", ID, userID).
+		Delete(&domain.Like{}).Error; err != nil {
+
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Model(&domain.Post{}).
+		Where("id = ?", ID).
+		Updates(map[string]interface{}{"likes": gorm.Expr("likes - ?", 1)}).Error; err != nil {
+
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}

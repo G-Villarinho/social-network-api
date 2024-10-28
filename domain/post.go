@@ -15,6 +15,7 @@ var (
 	ErrPostNotFound        = errors.New("post not found")
 	ErrPostNotBelongToUser = errors.New("post not belong to user")
 	ErrPostAlreadyLiked    = errors.New("post already liked")
+	ErrPostNotLiked        = errors.New("post not liked")
 )
 
 type Post struct {
@@ -65,6 +66,7 @@ type PostHandler interface {
 	DeletePost(ctx echo.Context) error
 	GetByUserID(ctx echo.Context) error
 	LikePost(ctx echo.Context) error
+	UnLikePost(ctx echo.Context) error
 }
 
 type PostService interface {
@@ -75,6 +77,7 @@ type PostService interface {
 	DeletePost(ctx context.Context, ID uuid.UUID) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*PostResponse, error)
 	LikePost(ctx context.Context, ID uuid.UUID) error
+	UnLikePost(ctx context.Context, ID uuid.UUID) error
 }
 
 type PostRepository interface {
@@ -85,6 +88,7 @@ type PostRepository interface {
 	DeletePost(ctx context.Context, ID uuid.UUID) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*Post, error)
 	LikePost(ctx context.Context, like Like) error
+	UnLikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error
 	HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
 }
 

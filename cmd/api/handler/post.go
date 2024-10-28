@@ -246,3 +246,36 @@ func (p *postHandler) LikePost(ctx echo.Context) error {
 
 	return ctx.NoContent(http.StatusOK)
 }
+
+func (p *postHandler) UnLikePost(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "post"),
+		slog.String("func", "UnLikePost"),
+	)
+
+	ID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		log.Warn("Error to parse UUID", slog.String("error", err.Error()))
+		return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusBadRequest, nil, "Bad Request", "Invalid ID.")
+	}
+
+	if err := p.postService.UnLikePost(ctx.Request().Context(), ID); err != nil {
+		log.Error(err.Error())
+
+		if err == domain.ErrSessionNotFound {
+			return domain.AccessDeniedAPIErrorResponse(ctx)
+		}
+
+		if err == domain.ErrPostNotFound {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusNotFound, nil, "Not Found", "The post does not exist.")
+		}
+
+		if err == domain.ErrPostNotLiked {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusConflict, nil, "Conflict", "The post is not liked.")
+		}
+
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}

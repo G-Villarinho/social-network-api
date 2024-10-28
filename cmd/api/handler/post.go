@@ -3,6 +3,7 @@ package handler
 import (
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
@@ -63,7 +64,16 @@ func (p *postHandler) GetPosts(ctx echo.Context) error {
 		slog.String("func", "GetPosts"),
 	)
 
-	response, err := p.postService.GetPosts(ctx.Request().Context())
+	page, err := strconv.Atoi(ctx.QueryParam("page"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(ctx.QueryParam("limit"))
+	if err != nil || limit < 1 {
+		limit = 10
+	}
+
+	response, err := p.postService.GetPosts(ctx.Request().Context(), page, limit)
 	if err != nil {
 		log.Error(err.Error())
 

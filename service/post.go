@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
@@ -40,36 +41,57 @@ func (p *postService) CreatePost(ctx context.Context, payload domain.PostPayload
 	return nil
 }
 
-func (p *postService) GetPosts(ctx context.Context) ([]*domain.PostResponse, error) {
+func (p *postService) GetPosts(ctx context.Context, page int, limit int) (*domain.Pagination[*domain.PostResponse], error) {
+	log := slog.With(
+		slog.String("service", "post"),
+		slog.String("func", "GetPosts"),
+	)
+
 	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
 	if !ok {
 		return nil, domain.ErrSessionNotFound
 	}
 
-	posts, err := p.postRepository.GetPosts(ctx, session.UserID)
+	cachedFeed, err := p.postRepository.GetCachedPosts(ctx, getKeyCachePost(session.UserID, page, limit))
+	if err == nil && cachedFeed != nil {
+		return cachedFeed, nil
+	}
+
+	paginatedPosts, err := p.postRepository.GetPaginatedPosts(ctx, session.UserID, page, limit)
 	if err != nil {
-		return nil, fmt.Errorf("error to get posts: %w", err)
+		return nil, fmt.Errorf("error to get paginated feed: %w", err)
 	}
 
-	if posts == nil {
-		return nil, domain.ErrPostNotFound
+	postIDMap := make(map[uuid.UUID]*domain.Post)
+	for _, post := range paginatedPosts.Rows {
+		postIDMap[post.ID] = post
 	}
 
-	likedPostIDs, err := p.postRepository.GetLikedPostIDs(ctx, session.UserID)
+	likedPostIDs, err := p.postRepository.GetLikesByPostIDs(ctx, session.UserID, getKeysFromMap(postIDMap))
 	if err != nil {
 		return nil, err
 	}
-	var postsResponse []*domain.PostResponse
-	for _, post := range posts {
-		likesByUser := false
-		if _, exists := likedPostIDs[post.ID]; exists {
-			likesByUser = true
-		}
 
-		postsResponse = append(postsResponse, post.ToPostResponse(likesByUser))
+	likedPostIDMap := convertToMap(likedPostIDs)
+
+	paginatedResponse := &domain.Pagination[*domain.PostResponse]{
+		Limit:      paginatedPosts.Limit,
+		Page:       paginatedPosts.Page,
+		TotalRows:  paginatedPosts.TotalRows,
+		TotalPages: paginatedPosts.TotalPages,
+		Rows:       make([]*domain.PostResponse, 0, len(paginatedPosts.Rows)),
 	}
 
-	return postsResponse, nil
+	for _, post := range paginatedPosts.Rows {
+		likesByUser := likedPostIDMap[post.ID]
+		paginatedResponse.Rows = append(paginatedResponse.Rows, post.ToPostResponse(likesByUser))
+	}
+
+	if err := p.postRepository.CachePost(ctx, getKeyCachePost(session.UserID, page, limit), paginatedResponse); err != nil {
+		log.Error("error to cache post", slog.String("error", err.Error()))
+	}
+
+	return paginatedResponse, nil
 }
 
 func (p *postService) GetPostById(ctx context.Context, ID uuid.UUID) (*domain.PostResponse, error) {
@@ -242,4 +264,24 @@ func (p *postService) UnlikePost(ctx context.Context, ID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func getKeysFromMap(m map[uuid.UUID]*domain.Post) []uuid.UUID {
+	keys := make([]uuid.UUID, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func convertToMap(ids []uuid.UUID) map[uuid.UUID]bool {
+	m := make(map[uuid.UUID]bool, len(ids))
+	for _, id := range ids {
+		m[id] = true
+	}
+	return m
+}
+
+func getKeyCachePost(userID uuid.UUID, page, limit int) string {
+	return fmt.Sprintf("user:%s:feed:page:%d:limit:%d", userID, page, limit)
 }

@@ -18,7 +18,7 @@ func setupPostRoutes(e *echo.Echo, di *pkg.Di) {
 	group := e.Group("/v1/posts", middleware.EnsureAuthenticated(di))
 
 	group.POST("", postHandler.CreatePost)
-	group.GET("", postHandler.GetPosts)
+	group.GET("/feed", postHandler.GetPosts)
 	group.GET("/:id", postHandler.GetPostById)
 	group.PUT("/:id", postHandler.UpdatePost)
 	group.DELETE("/:id", postHandler.DeletePost)

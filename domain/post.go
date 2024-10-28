@@ -72,7 +72,7 @@ type PostHandler interface {
 
 type PostService interface {
 	CreatePost(ctx context.Context, payload PostPayload) error
-	GetPosts(ctx context.Context) ([]*PostResponse, error)
+	GetPosts(ctx context.Context, page, limit int) (*Pagination[*PostResponse], error)
 	GetPostById(ctx context.Context, ID uuid.UUID) (*PostResponse, error)
 	UpdatePost(ctx context.Context, ID uuid.UUID, payload PostUpdatePayload) error
 	DeletePost(ctx context.Context, ID uuid.UUID) error
@@ -83,7 +83,7 @@ type PostService interface {
 
 type PostRepository interface {
 	CreatePost(ctx context.Context, post Post) error
-	GetPosts(ctx context.Context, userID uuid.UUID) ([]*Post, error)
+	GetPaginatedPosts(ctx context.Context, userID uuid.UUID, page int, limit int) (*Pagination[*Post], error)
 	GetPostById(ctx context.Context, ID uuid.UUID, preload bool) (*Post, error)
 	UpdatePost(ctx context.Context, ID uuid.UUID, post Post) error
 	DeletePost(ctx context.Context, ID uuid.UUID) error
@@ -92,6 +92,9 @@ type PostRepository interface {
 	UnlikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error
 	HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
 	GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]struct{}, error)
+	GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error)
+	GetCachedPosts(ctx context.Context, cacheKey string) (*Pagination[*PostResponse], error)
+	CachePost(ctx context.Context, cacheKey string, feed *Pagination[*PostResponse]) error
 }
 
 func (p *PostPayload) trim() {

@@ -7,17 +7,22 @@ import (
 	"gorm.io/gorm"
 )
 
-func paginate[T any](value *[]T, pagination *domain.Pagination[T], db *gorm.DB) func(db *gorm.DB) *gorm.DB {
+func paginate[T any](pagination *domain.Pagination[T], db *gorm.DB) (*domain.Pagination[T], error) {
 	var totalRows int64
 
-	db.Model(value).Count(&totalRows)
-
+	if err := db.Model(&pagination.Rows).Count(&totalRows).Error; err != nil {
+		return nil, err
+	}
 	pagination.TotalRows = totalRows
 
-	totalPages := int(math.Ceil(float64(totalRows) / float64(pagination.GetLimit())))
-	pagination.TotalPages = totalPages
+	pagination.TotalPages = int(math.Ceil(float64(totalRows) / float64(pagination.GetLimit())))
 
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Offset(pagination.GetOffset()).Limit(pagination.GetLimit()).Order(pagination.GetSort())
+	if err := db.Offset(pagination.GetOffset()).
+		Limit(pagination.GetLimit()).
+		Order(pagination.GetSort()).
+		Find(&pagination.Rows).Error; err != nil {
+		return nil, err
 	}
+
+	return pagination, nil
 }

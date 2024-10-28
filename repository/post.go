@@ -2,11 +2,14 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	jsoniter "github.com/json-iterator/go"
 	"gorm.io/gorm"
 )
 
@@ -43,24 +46,24 @@ func (p *postRepository) CreatePost(ctx context.Context, post domain.Post) error
 	return nil
 }
 
-func (p *postRepository) GetPosts(ctx context.Context, userID uuid.UUID) ([]*domain.Post, error) {
-	var posts []*domain.Post
+func (p *postRepository) GetPaginatedPosts(ctx context.Context, userID uuid.UUID, page int, limit int) (*domain.Pagination[*domain.Post], error) {
+	pagination := &domain.Pagination[*domain.Post]{
+		Limit: limit,
+		Page:  page,
+		Sort:  "createdAt desc",
+	}
 
 	subQuery := p.db.Table("Follower").Select("userId").Where("followerId = ?", userID)
 
-	if err := p.db.WithContext(ctx).
-		Preload("Author").
-		Where("authorId = ? OR authorId IN (?)", userID, subQuery).
-		Find(&posts).Error; err != nil {
-
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
-
-		return nil, err
+	paginatedPosts, err := paginate(pagination,
+		p.db.WithContext(ctx).
+			Preload("Author").
+			Where("authorId = ? OR authorId IN (?)", userID, subQuery))
+	if err != nil {
+		return nil, fmt.Errorf("error to get paginated feed in repository: %w", err)
 	}
 
-	return posts, nil
+	return paginatedPosts, nil
 }
 
 func (p *postRepository) GetPostById(ctx context.Context, ID uuid.UUID, preload bool) (*domain.Post, error) {
@@ -201,4 +204,47 @@ func (p *postRepository) GetLikedPostIDs(ctx context.Context, userID uuid.UUID) 
 	}
 
 	return likedPostIDs, nil
+}
+
+func (p *postRepository) GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error) {
+	var likes []domain.Like
+	if err := p.db.WithContext(ctx).
+		Where("userID = ? AND postID IN (?)", userID, postIDs).
+		Find(&likes).Error; err != nil {
+		return nil, err
+	}
+
+	var likedPostIDs []uuid.UUID
+	for _, like := range likes {
+		likedPostIDs = append(likedPostIDs, like.PostID)
+	}
+
+	return likedPostIDs, nil
+}
+
+func (p *postRepository) GetCachedPosts(ctx context.Context, cacheKey string) (*domain.Pagination[*domain.PostResponse], error) {
+	var cachedFeed domain.Pagination[*domain.PostResponse]
+
+	data, err := p.redisClient.Get(ctx, cacheKey).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	if err := jsoniter.UnmarshalFromString(data, &cachedFeed); err != nil {
+		return nil, err
+	}
+	return &cachedFeed, nil
+}
+
+func (p *postRepository) CachePost(ctx context.Context, cacheKey string, feed *domain.Pagination[*domain.PostResponse]) error {
+	data, err := jsoniter.MarshalToString(feed)
+	if err != nil {
+		return err
+	}
+
+	return p.redisClient.Set(ctx, cacheKey, data, 5*time.Minute).Err()
 }

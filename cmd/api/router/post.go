@@ -19,4 +19,8 @@ func setupPostRoutes(e *echo.Echo, di *pkg.Di) {
 
 	group.POST("", postHandler.CreatePost)
 	group.GET("", postHandler.GetPosts)
+	group.GET("/:id", postHandler.GetPostById)
+	group.PUT("/:id", postHandler.UpdatePost)
+	group.DELETE("/:id", postHandler.DeletePost)
+	group.DELETE("/:userId", postHandler.GetByUserID)
 }

@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	ErrPostNotFound = errors.New("post not found")
+	ErrPostNotFound        = errors.New("post not found")
+	ErrPostNotBelongToUser = errors.New("post not belong to user")
 )
 
 type Post struct {
@@ -48,16 +49,28 @@ type PostResponse struct {
 type PostHandler interface {
 	CreatePost(ctx echo.Context) error
 	GetPosts(ctx echo.Context) error
+	GetPostById(ctx echo.Context) error
+	UpdatePost(ctx echo.Context) error
+	DeletePost(ctx echo.Context) error
+	GetByUserID(ctx echo.Context) error
 }
 
 type PostService interface {
 	CreatePost(ctx context.Context, payload PostPayload) error
 	GetPosts(ctx context.Context) ([]*PostResponse, error)
+	GetPostById(ctx context.Context, ID uuid.UUID) (*PostResponse, error)
+	UpdatePost(ctx context.Context, ID uuid.UUID, payload PostUpdatePayload) error
+	DeletePost(ctx context.Context, ID uuid.UUID) error
+	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*PostResponse, error)
 }
 
 type PostRepository interface {
 	CreatePost(ctx context.Context, post Post) error
 	GetPosts(ctx context.Context, userID uuid.UUID) ([]*Post, error)
+	GetPostById(ctx context.Context, ID uuid.UUID, preload bool) (*Post, error)
+	UpdatePost(ctx context.Context, ID uuid.UUID, post Post) error
+	DeletePost(ctx context.Context, ID uuid.UUID) error
+	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*Post, error)
 }
 
 func (p *PostPayload) trim() {
@@ -77,6 +90,13 @@ func (p *PostPayload) Validate() ValidationErrors {
 
 func (p *PostUpdatePayload) Validate() ValidationErrors {
 	p.trim()
+
+	if p.Title == "" && p.Content == "" {
+		return ValidationErrors{
+			"General": "Title or Content is required",
+		}
+	}
+
 	return ValidateStruct(p)
 }
 
@@ -96,6 +116,16 @@ func (p *Post) ToPostResponse() *PostResponse {
 		Title:          p.Title,
 		Content:        p.Content,
 		CreatedAt:      p.CreatedAt,
+	}
+}
+
+func (p *Post) Update(payload PostUpdatePayload) {
+	if payload.Title != "" {
+		p.Title = payload.Title
+	}
+
+	if payload.Content != "" {
+		p.Content = payload.Content
 	}
 }
 

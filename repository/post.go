@@ -62,3 +62,65 @@ func (p *postRepository) GetPosts(ctx context.Context, userID uuid.UUID) ([]*dom
 
 	return posts, nil
 }
+
+func (p *postRepository) GetPostById(ctx context.Context, ID uuid.UUID, preload bool) (*domain.Post, error) {
+	var post domain.Post
+
+	query := p.db.WithContext(ctx)
+
+	if preload {
+		query = query.Preload("Author")
+	}
+
+	if err := query.
+		Where("id = ?", ID).
+		First(&post).Error; err != nil {
+
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &post, nil
+}
+
+func (p *postRepository) UpdatePost(ctx context.Context, ID uuid.UUID, post domain.Post) error {
+	if err := p.db.WithContext(ctx).
+		Model(&post).
+		Where("id = ?", ID).
+		Updates(&post).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *postRepository) DeletePost(ctx context.Context, ID uuid.UUID) error {
+	if err := p.db.WithContext(ctx).
+		Where("id = ?", ID).
+		Delete(&domain.Post{}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *postRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*domain.Post, error) {
+	var posts []*domain.Post
+
+	if err := p.db.WithContext(ctx).
+		Preload("Author").
+		Where("authorId = ?", userID).
+		Find(&posts).Error; err != nil {
+
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return posts, nil
+}

@@ -124,3 +124,41 @@ func (p *postRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*
 
 	return posts, nil
 }
+
+func (p *postRepository) LikePost(ctx context.Context, like domain.Like) error {
+	tx := p.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if err := tx.Create(&like).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Model(&domain.Post{}).
+		Where("id = ?", like.PostID).
+		Updates(map[string]interface{}{"likes": gorm.Expr("likes + ?", 1)}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+func (p *postRepository) HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error) {
+	var like domain.Like
+
+	if err := p.db.WithContext(ctx).
+		Where("postId = ? AND userId = ?", ID, userID).
+		First(&like).Error; err != nil {
+
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}

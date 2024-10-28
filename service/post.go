@@ -147,3 +147,39 @@ func (p *postService) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*dom
 	return postsResponse, nil
 
 }
+
+func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
+	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
+	if !ok {
+		return domain.ErrSessionNotFound
+	}
+
+	post, err := p.postRepository.GetPostById(ctx, ID, false)
+	if err != nil {
+		return fmt.Errorf("error to get post by ID: %w", err)
+	}
+
+	if post == nil {
+		return domain.ErrPostNotFound
+	}
+
+	hasLiked, err := p.postRepository.HasUserLikedPost(ctx, ID, session.UserID)
+	if err != nil {
+		return fmt.Errorf("error to check if user has liked post: %w", err)
+	}
+
+	if hasLiked {
+		return domain.ErrPostAlreadyLiked
+	}
+
+	like := domain.Like{
+		PostID: ID,
+		UserID: session.UserID,
+	}
+
+	if err := p.postRepository.LikePost(ctx, like); err != nil {
+		return fmt.Errorf("error to like post: %w", err)
+	}
+
+	return nil
+}

@@ -24,6 +24,7 @@ func main() {
 		&domain.User{},
 		&domain.Follower{},
 		&domain.Post{},
+		&domain.Like{},
 	); err != nil {
 		log.Fatal("error to migrate: ", err)
 	}

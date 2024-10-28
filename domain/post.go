@@ -14,6 +14,7 @@ import (
 var (
 	ErrPostNotFound        = errors.New("post not found")
 	ErrPostNotBelongToUser = errors.New("post not belong to user")
+	ErrPostAlreadyLiked    = errors.New("post already liked")
 )
 
 type Post struct {
@@ -23,6 +24,16 @@ type Post struct {
 	Likes     uint64    `gorm:"column:likes;not null;default:0"`
 	Title     string    `gorm:"column:title;type:varchar(50);not null"`
 	Content   string    `gorm:"column:content;type:varchar(255);not null"`
+	CreatedAt time.Time `gorm:"column:createdAt;not null"`
+	UpdatedAt time.Time `gorm:"column:updatedAt;default:null"`
+}
+
+type Like struct {
+	ID        uuid.UUID `gorm:"column:id;type:char(36);primaryKey"`
+	UserID    uuid.UUID `gorm:"column:userID;type:char(36);not null"`
+	PostID    uuid.UUID `gorm:"column:postID;type:char(36);not null"`
+	Post      Post      `gorm:"foreignKey:PostID;constraint:OnDelete:CASCADE"`
+	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	CreatedAt time.Time `gorm:"column:createdAt;not null"`
 	UpdatedAt time.Time `gorm:"column:updatedAt;default:null"`
 }
@@ -53,6 +64,7 @@ type PostHandler interface {
 	UpdatePost(ctx echo.Context) error
 	DeletePost(ctx echo.Context) error
 	GetByUserID(ctx echo.Context) error
+	LikePost(ctx echo.Context) error
 }
 
 type PostService interface {
@@ -62,6 +74,7 @@ type PostService interface {
 	UpdatePost(ctx context.Context, ID uuid.UUID, payload PostUpdatePayload) error
 	DeletePost(ctx context.Context, ID uuid.UUID) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*PostResponse, error)
+	LikePost(ctx context.Context, ID uuid.UUID) error
 }
 
 type PostRepository interface {
@@ -71,6 +84,8 @@ type PostRepository interface {
 	UpdatePost(ctx context.Context, ID uuid.UUID, post Post) error
 	DeletePost(ctx context.Context, ID uuid.UUID) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*Post, error)
+	LikePost(ctx context.Context, like Like) error
+	HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
 }
 
 func (p *PostPayload) trim() {
@@ -141,5 +156,20 @@ func (p *Post) BeforeCreate(tx *gorm.DB) (err error) {
 
 func (p *Post) BeforeUpdate(tx *gorm.DB) (err error) {
 	p.UpdatedAt = time.Now().UTC()
+	return
+}
+
+func (Like) TableName() string {
+	return "Like"
+}
+
+func (l *Like) BeforeCreate(tx *gorm.DB) (err error) {
+	l.ID = uuid.New()
+	l.CreatedAt = time.Now().UTC()
+	return
+}
+
+func (l *Like) BeforeUpdate(tx *gorm.DB) (err error) {
+	l.UpdatedAt = time.Now().UTC()
 	return
 }

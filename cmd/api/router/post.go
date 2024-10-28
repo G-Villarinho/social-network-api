@@ -23,4 +23,5 @@ func setupPostRoutes(e *echo.Echo, di *pkg.Di) {
 	group.PUT("/:id", postHandler.UpdatePost)
 	group.DELETE("/:id", postHandler.DeletePost)
 	group.DELETE("/:userId", postHandler.GetByUserID)
+	group.POST("/:id/like", postHandler.LikePost)
 }

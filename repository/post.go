@@ -163,7 +163,7 @@ func (p *postRepository) HasUserLikedPost(ctx context.Context, ID uuid.UUID, use
 	return true, nil
 }
 
-func (p *postRepository) UnLikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error {
+func (p *postRepository) UnlikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error {
 	tx := p.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return tx.Error
@@ -185,4 +185,20 @@ func (p *postRepository) UnLikePost(ctx context.Context, ID uuid.UUID, userID uu
 	}
 
 	return tx.Commit().Error
+}
+
+func (p *postRepository) GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]struct{}, error) {
+	var likes []domain.Like
+	if err := p.db.WithContext(ctx).
+		Where("userID = ?", userID).
+		Find(&likes).Error; err != nil {
+		return nil, err
+	}
+
+	likedPostIDs := make(map[uuid.UUID]struct{})
+	for _, like := range likes {
+		likedPostIDs[like.PostID] = struct{}{}
+	}
+
+	return likedPostIDs, nil
 }

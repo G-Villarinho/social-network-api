@@ -53,6 +53,7 @@ type PostResponse struct {
 	ID             uuid.UUID `json:"id"`
 	AuthorUsername string    `json:"authorUsername"`
 	Likes          uint64    `json:"likes"`
+	LikesByUser    bool      `json:"likesByUser"`
 	Title          string    `json:"title"`
 	Content        string    `json:"content"`
 	CreatedAt      time.Time `json:"createdAt"`
@@ -66,7 +67,7 @@ type PostHandler interface {
 	DeletePost(ctx echo.Context) error
 	GetByUserID(ctx echo.Context) error
 	LikePost(ctx echo.Context) error
-	UnLikePost(ctx echo.Context) error
+	UnlikePost(ctx echo.Context) error
 }
 
 type PostService interface {
@@ -77,7 +78,7 @@ type PostService interface {
 	DeletePost(ctx context.Context, ID uuid.UUID) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*PostResponse, error)
 	LikePost(ctx context.Context, ID uuid.UUID) error
-	UnLikePost(ctx context.Context, ID uuid.UUID) error
+	UnlikePost(ctx context.Context, ID uuid.UUID) error
 }
 
 type PostRepository interface {
@@ -88,8 +89,9 @@ type PostRepository interface {
 	DeletePost(ctx context.Context, ID uuid.UUID) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*Post, error)
 	LikePost(ctx context.Context, like Like) error
-	UnLikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error
+	UnlikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error
 	HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
+	GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]struct{}, error)
 }
 
 func (p *PostPayload) trim() {
@@ -127,11 +129,12 @@ func (p *PostPayload) ToPost(userId uuid.UUID) *Post {
 	}
 }
 
-func (p *Post) ToPostResponse() *PostResponse {
+func (p *Post) ToPostResponse(likesByUser bool) *PostResponse {
 	return &PostResponse{
 		ID:             p.ID,
 		AuthorUsername: p.Author.Username,
 		Likes:          p.Likes,
+		LikesByUser:    likesByUser,
 		Title:          p.Title,
 		Content:        p.Content,
 		CreatedAt:      p.CreatedAt,

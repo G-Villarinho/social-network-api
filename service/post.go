@@ -55,9 +55,18 @@ func (p *postService) GetPosts(ctx context.Context) ([]*domain.PostResponse, err
 		return nil, domain.ErrPostNotFound
 	}
 
+	likedPostIDs, err := p.postRepository.GetLikedPostIDs(ctx, session.UserID)
+	if err != nil {
+		return nil, err
+	}
 	var postsResponse []*domain.PostResponse
 	for _, post := range posts {
-		postsResponse = append(postsResponse, post.ToPostResponse())
+		likesByUser := false
+		if _, exists := likedPostIDs[post.ID]; exists {
+			likesByUser = true
+		}
+
+		postsResponse = append(postsResponse, post.ToPostResponse(likesByUser))
 	}
 
 	return postsResponse, nil
@@ -73,7 +82,12 @@ func (p *postService) GetPostById(ctx context.Context, ID uuid.UUID) (*domain.Po
 		return nil, domain.ErrPostNotFound
 	}
 
-	return post.ToPostResponse(), nil
+	hasLiked, err := p.postRepository.HasUserLikedPost(ctx, ID, post.AuthorID)
+	if err != nil {
+		return nil, fmt.Errorf("error to check if user has liked post: %w", err)
+	}
+
+	return post.ToPostResponse(hasLiked), nil
 }
 
 func (p *postService) UpdatePost(ctx context.Context, ID uuid.UUID, payload domain.PostUpdatePayload) error {
@@ -130,6 +144,11 @@ func (p *postService) DeletePost(ctx context.Context, ID uuid.UUID) error {
 }
 
 func (p *postService) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*domain.PostResponse, error) {
+	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
+	if !ok {
+		return nil, domain.ErrSessionNotFound
+	}
+
 	posts, err := p.postRepository.GetByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("error to get posts by user ID: %w", err)
@@ -139,9 +158,18 @@ func (p *postService) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*dom
 		return nil, domain.ErrPostNotFound
 	}
 
+	likedPostIDs, err := p.postRepository.GetLikedPostIDs(ctx, session.UserID)
+	if err != nil {
+		return nil, err
+	}
 	var postsResponse []*domain.PostResponse
 	for _, post := range posts {
-		postsResponse = append(postsResponse, post.ToPostResponse())
+		likesByUser := false
+		if _, exists := likedPostIDs[post.ID]; exists {
+			likesByUser = true
+		}
+
+		postsResponse = append(postsResponse, post.ToPostResponse(likesByUser))
 	}
 
 	return postsResponse, nil
@@ -184,7 +212,7 @@ func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
 	return nil
 }
 
-func (p *postService) UnLikePost(ctx context.Context, ID uuid.UUID) error {
+func (p *postService) UnlikePost(ctx context.Context, ID uuid.UUID) error {
 	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
 	if !ok {
 		return domain.ErrSessionNotFound
@@ -208,7 +236,7 @@ func (p *postService) UnLikePost(ctx context.Context, ID uuid.UUID) error {
 		return domain.ErrPostNotLiked
 	}
 
-	if err := p.postRepository.UnLikePost(ctx, ID, session.UserID); err != nil {
+	if err := p.postRepository.UnlikePost(ctx, ID, session.UserID); err != nil {
 		return fmt.Errorf("error to unlike post: %w", err)
 	}
 

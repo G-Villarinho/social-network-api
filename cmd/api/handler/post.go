@@ -247,7 +247,7 @@ func (p *postHandler) LikePost(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-func (p *postHandler) UnLikePost(ctx echo.Context) error {
+func (p *postHandler) UnlikePost(ctx echo.Context) error {
 	log := slog.With(
 		slog.String("handler", "post"),
 		slog.String("func", "UnLikePost"),
@@ -259,7 +259,7 @@ func (p *postHandler) UnLikePost(ctx echo.Context) error {
 		return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusBadRequest, nil, "Bad Request", "Invalid ID.")
 	}
 
-	if err := p.postService.UnLikePost(ctx.Request().Context(), ID); err != nil {
+	if err := p.postService.UnlikePost(ctx.Request().Context(), ID); err != nil {
 		log.Error(err.Error())
 
 		if err == domain.ErrSessionNotFound {

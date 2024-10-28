@@ -176,6 +176,7 @@ func (p *postService) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*dom
 
 }
 
+// TODO: Implement LikePost and UnlikePost methods asynchonously
 func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
 	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
 	if !ok {

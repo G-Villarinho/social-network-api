@@ -3,13 +3,11 @@ package repository
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
-	jsoniter "github.com/json-iterator/go"
 	"gorm.io/gorm"
 )
 
@@ -220,31 +218,4 @@ func (p *postRepository) GetLikesByPostIDs(ctx context.Context, userID uuid.UUID
 	}
 
 	return likedPostIDs, nil
-}
-
-func (p *postRepository) GetCachedPosts(ctx context.Context, cacheKey string) (*domain.Pagination[*domain.PostResponse], error) {
-	var cachedFeed domain.Pagination[*domain.PostResponse]
-
-	data, err := p.redisClient.Get(ctx, cacheKey).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	if err := jsoniter.UnmarshalFromString(data, &cachedFeed); err != nil {
-		return nil, err
-	}
-	return &cachedFeed, nil
-}
-
-func (p *postRepository) CachePost(ctx context.Context, cacheKey string, feed *domain.Pagination[*domain.PostResponse]) error {
-	data, err := jsoniter.MarshalToString(feed)
-	if err != nil {
-		return err
-	}
-
-	return p.redisClient.Set(ctx, cacheKey, data, 5*time.Minute).Err()
 }

@@ -93,8 +93,6 @@ type PostRepository interface {
 	HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
 	GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]struct{}, error)
 	GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error)
-	GetCachedPosts(ctx context.Context, cacheKey string) (*Pagination[*PostResponse], error)
-	CachePost(ctx context.Context, cacheKey string, feed *Pagination[*PostResponse]) error
 }
 
 func (p *PostPayload) trim() {

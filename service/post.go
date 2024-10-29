@@ -4,16 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type postService struct {
 	di             *pkg.Di
 	postRepository domain.PostRepository
 	contextService domain.ContextService
+	redisClient    *redis.Client
 }
 
 func NewPostService(di *pkg.Di) (domain.PostService, error) {
@@ -27,10 +31,16 @@ func NewPostService(di *pkg.Di) (domain.PostService, error) {
 		return nil, err
 	}
 
+	redisClient, err := pkg.Invoke[*redis.Client](di)
+	if err != nil {
+		return nil, err
+	}
+
 	return &postService{
 		di:             di,
 		postRepository: postRepository,
 		contextService: contextService,
+		redisClient:    redisClient,
 	}, nil
 }
 
@@ -44,19 +54,17 @@ func (p *postService) CreatePost(ctx context.Context, payload domain.PostPayload
 }
 
 func (p *postService) GetPosts(ctx context.Context, page int, limit int) (*domain.Pagination[*domain.PostResponse], error) {
-	userID := p.contextService.GetUserID(ctx)
-
-	cachedFeed, err := p.getCachedPosts(ctx, userID, page, limit)
+	cachedFeed, err := p.getCachedPosts(ctx, page, limit)
 	if err == nil && cachedFeed != nil {
 		return cachedFeed, nil
 	}
 
-	paginatedPosts, err := p.buildPaginatedResponse(ctx, userID, page, limit)
+	paginatedPosts, err := p.buildPaginatedResponse(ctx, page, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := p.cachePosts(ctx, userID, page, limit, paginatedPosts); err != nil {
+	if err := p.cachePosts(ctx, paginatedPosts, page, limit); err != nil {
 		slog.Error("error to cache post", slog.String("error", err.Error()))
 	}
 
@@ -213,12 +221,9 @@ func (p *postService) UnlikePost(ctx context.Context, ID uuid.UUID) error {
 	return nil
 }
 
-func (p *postService) getCachedPosts(ctx context.Context, userID uuid.UUID, page, limit int) (*domain.Pagination[*domain.PostResponse], error) {
-	cacheKey := getKeyCachePost(userID, page, limit)
-	return p.postRepository.GetCachedPosts(ctx, cacheKey)
-}
+func (p *postService) buildPaginatedResponse(ctx context.Context, page, limit int) (*domain.Pagination[*domain.PostResponse], error) {
+	userID := p.contextService.GetUserID(ctx)
 
-func (p *postService) buildPaginatedResponse(ctx context.Context, userID uuid.UUID, page, limit int) (*domain.Pagination[*domain.PostResponse], error) {
 	paginatedPosts, err := p.postRepository.GetPaginatedPosts(ctx, userID, page, limit)
 	if err != nil {
 		return nil, fmt.Errorf("error to get paginated posts: %w", err)
@@ -228,10 +233,12 @@ func (p *postService) buildPaginatedResponse(ctx context.Context, userID uuid.UU
 	for _, post := range paginatedPosts.Rows {
 		postIDMap[post.ID] = post
 	}
+
 	likedPostIDs, err := p.postRepository.GetLikesByPostIDs(ctx, userID, getKeysFromMap(postIDMap))
 	if err != nil {
 		return nil, err
 	}
+
 	likedPostIDMap := convertToMap(likedPostIDs)
 
 	paginatedResponse := &domain.Pagination[*domain.PostResponse]{
@@ -250,9 +257,30 @@ func (p *postService) buildPaginatedResponse(ctx context.Context, userID uuid.UU
 	return paginatedResponse, nil
 }
 
-func (p *postService) cachePosts(ctx context.Context, userID uuid.UUID, page, limit int, response *domain.Pagination[*domain.PostResponse]) error {
-	cacheKey := getKeyCachePost(userID, page, limit)
-	return p.postRepository.CachePost(ctx, cacheKey, response)
+func (p *postService) getCachedPosts(ctx context.Context, page, limit int) (*domain.Pagination[*domain.PostResponse], error) {
+	var cachedFeed domain.Pagination[*domain.PostResponse]
+
+	data, err := p.redisClient.Get(ctx, getKeyCachePost(p.contextService.GetUserID(ctx), page, limit)).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+	if err := jsoniter.UnmarshalFromString(data, &cachedFeed); err != nil {
+		return nil, err
+	}
+	return &cachedFeed, nil
+}
+
+func (p *postService) cachePosts(ctx context.Context, feed *domain.Pagination[*domain.PostResponse], page, limit int) error {
+	data, err := jsoniter.MarshalToString(feed)
+	if err != nil {
+		return err
+	}
+
+	return p.redisClient.Set(ctx, getKeyCachePost(p.contextService.GetUserID(ctx), page, limit), data, 5*time.Minute).Err()
 }
 
 func getKeysFromMap(m map[uuid.UUID]*domain.Post) []uuid.UUID {

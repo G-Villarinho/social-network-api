@@ -165,31 +165,20 @@ func (p *postService) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*dom
 }
 
 func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
-	post, err := p.postRepository.GetPostById(ctx, ID, false)
+	userID := p.contextService.GetUserID(ctx)
+	cacheKey := getKeyCacheLike(userID, ID)
+
+	exists, err := p.redisClient.Exists(ctx, cacheKey).Result()
 	if err != nil {
-		return fmt.Errorf("error to get post by ID: %w", err)
+		return fmt.Errorf("error checking like cache in Redis: %w", err)
 	}
 
-	if post == nil {
-		return domain.ErrPostNotFound
-	}
-
-	hasLiked, err := p.postRepository.HasUserLikedPost(ctx, ID, p.contextService.GetUserID(ctx))
-	if err != nil {
-		return fmt.Errorf("error to check if user has liked post: %w", err)
-	}
-
-	if hasLiked {
+	if exists > 0 {
 		return domain.ErrPostAlreadyLiked
 	}
 
-	like := domain.Like{
-		PostID: ID,
-		UserID: p.contextService.GetUserID(ctx),
-	}
-
-	if err := p.postRepository.LikePost(ctx, like); err != nil {
-		return fmt.Errorf("error to like post: %w", err)
+	if err := p.redisClient.Set(ctx, cacheKey, "liked", 5*time.Minute).Err(); err != nil {
+		return fmt.Errorf("error caching like in Redis: %w", err)
 	}
 
 	return nil
@@ -301,4 +290,8 @@ func convertToMap(ids []uuid.UUID) map[uuid.UUID]bool {
 
 func getKeyCachePost(userID uuid.UUID, page, limit int) string {
 	return fmt.Sprintf("user:%s:feed:page:%d:limit:%d", userID, page, limit)
+}
+
+func getKeyCacheLike(userID, postID uuid.UUID) string {
+	return fmt.Sprintf("like:%s:%s", userID, postID)
 }

@@ -38,7 +38,7 @@ clean:
 
 start:
 	@echo "Running API..."
-	air
+	go run cmd/api/main.go
 
 run-worker:
 	@echo "Running worker for upload images..."
@@ -47,7 +47,7 @@ run-worker:
 	
 migrations:
 	@echo "Runnig migrations..."
-	go run config/database/migration/main.go
+	go run database/migrations/main.go
 	@echo "migrations executed succefully"
 
 test:

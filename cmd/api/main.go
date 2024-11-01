@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/G-Villarinho/social-network/client"
 	"github.com/G-Villarinho/social-network/cmd/api/handler"
 	"github.com/G-Villarinho/social-network/cmd/api/router"
 	"github.com/G-Villarinho/social-network/config"
@@ -63,12 +64,30 @@ func main() {
 		return redisClient, nil
 	})
 
+	rabbitMQClient, err := client.NewRabbitMQClient(di)
+	if err != nil {
+		log.Fatal("error initializing RabbitMQ client: ", err)
+	}
+	if err := rabbitMQClient.Connect(); err != nil {
+		log.Fatal("error connecting to RabbitMQ: ", err)
+	}
+	defer func() {
+		if err := rabbitMQClient.Disconnect(); err != nil {
+			log.Println("error disconnecting from RabbitMQ:", err)
+		}
+	}()
+
+	pkg.Provide(di, func(d *pkg.Di) (client.RabbitMQClient, error) {
+		return rabbitMQClient, nil
+	})
+
 	pkg.Provide(di, handler.NewFollowerHandler)
 	pkg.Provide(di, handler.NewPostHandler)
 	pkg.Provide(di, handler.NewUserHandler)
 
 	pkg.Provide(di, service.NewContextService)
 	pkg.Provide(di, service.NewFollowerService)
+	pkg.Provide(di, service.NewLikeQueueService)
 	pkg.Provide(di, service.NewPostService)
 	pkg.Provide(di, service.NewSessionService)
 	pkg.Provide(di, service.NewUserService)

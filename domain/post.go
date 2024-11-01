@@ -49,6 +49,11 @@ type PostUpdatePayload struct {
 	Content string `json:"content" validate:"omitempty,max=255"`
 }
 
+type LikePayload struct {
+	UserID uuid.UUID `json:"userId"`
+	PostID uuid.UUID `json:"postId"`
+}
+
 type PostResponse struct {
 	ID             uuid.UUID `json:"id"`
 	AuthorUsername string    `json:"authorUsername"`
@@ -93,6 +98,10 @@ type PostRepository interface {
 	HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
 	GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]struct{}, error)
 	GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error)
+}
+
+type LikeQueueService interface {
+	AddLike(ctx context.Context, payload LikePayload)
 }
 
 func (p *PostPayload) trim() {

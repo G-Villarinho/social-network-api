@@ -14,10 +14,11 @@ import (
 )
 
 type postService struct {
-	di             *pkg.Di
-	postRepository domain.PostRepository
-	contextService domain.ContextService
-	redisClient    *redis.Client
+	di               *pkg.Di
+	redisClient      *redis.Client
+	postRepository   domain.PostRepository
+	contextService   domain.ContextService
+	likeQueueService domain.LikeQueueService
 }
 
 func NewPostService(di *pkg.Di) (domain.PostService, error) {
@@ -36,11 +37,17 @@ func NewPostService(di *pkg.Di) (domain.PostService, error) {
 		return nil, err
 	}
 
+	likeQueueService, err := pkg.Invoke[domain.LikeQueueService](di)
+	if err != nil {
+		return nil, err
+	}
+
 	return &postService{
-		di:             di,
-		postRepository: postRepository,
-		contextService: contextService,
-		redisClient:    redisClient,
+		di:               di,
+		postRepository:   postRepository,
+		contextService:   contextService,
+		redisClient:      redisClient,
+		likeQueueService: likeQueueService,
 	}, nil
 }
 
@@ -168,19 +175,16 @@ func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
 	userID := p.contextService.GetUserID(ctx)
 	cacheKey := getKeyCacheLike(userID, ID)
 
-	exists, err := p.redisClient.Exists(ctx, cacheKey).Result()
-	if err != nil {
-		return fmt.Errorf("error checking like cache in Redis: %w", err)
-	}
-
-	if exists > 0 {
-		return domain.ErrPostAlreadyLiked
-	}
-
 	if err := p.redisClient.Set(ctx, cacheKey, "liked", 5*time.Minute).Err(); err != nil {
 		return fmt.Errorf("error caching like in Redis: %w", err)
 	}
 
+	payload := domain.LikePayload{
+		UserID: userID,
+		PostID: ID,
+	}
+
+	p.likeQueueService.AddLike(ctx, payload)
 	return nil
 }
 

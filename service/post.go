@@ -4,23 +4,18 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
-	"github.com/G-Villarinho/social-network/client"
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
-	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 )
 
 type postService struct {
 	di                    *pkg.Di
-	redisClient           *redis.Client
 	postRepository        domain.PostRepository
 	contextService        domain.ContextService
-	rabbitMQClient        client.RabbitMQClient
 	memoryCacheRepository domain.MemoryCacheRepository
 	queueService          domain.QueueService
 }
@@ -32,16 +27,6 @@ func NewPostService(di *pkg.Di) (domain.PostService, error) {
 	}
 
 	contextService, err := pkg.Invoke[domain.ContextService](di)
-	if err != nil {
-		return nil, err
-	}
-
-	redisClient, err := pkg.Invoke[*redis.Client](di)
-	if err != nil {
-		return nil, err
-	}
-
-	rabbitMQClient, err := pkg.Invoke[client.RabbitMQClient](di)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +45,6 @@ func NewPostService(di *pkg.Di) (domain.PostService, error) {
 		di:                    di,
 		postRepository:        postRepository,
 		contextService:        contextService,
-		redisClient:           redisClient,
-		rabbitMQClient:        rabbitMQClient,
 		memoryCacheRepository: memoryCacheRepository,
 		queueService:          queueService,
 	}, nil
@@ -77,7 +60,12 @@ func (p *postService) CreatePost(ctx context.Context, payload domain.PostPayload
 }
 
 func (p *postService) GetPosts(ctx context.Context, page int, limit int) (*domain.Pagination[*domain.PostResponse], error) {
-	cachedFeed, err := p.getCachedPosts(ctx, page, limit)
+	log := slog.With(
+		slog.String("service", "post"),
+		slog.String("func", "GetPosts"),
+	)
+
+	cachedFeed, err := p.memoryCacheRepository.GetPosts(ctx, p.contextService.GetUserID(ctx), page, limit)
 	if err == nil && cachedFeed != nil {
 		return cachedFeed, nil
 	}
@@ -87,8 +75,8 @@ func (p *postService) GetPosts(ctx context.Context, page int, limit int) (*domai
 		return nil, err
 	}
 
-	if err := p.cachePosts(ctx, paginatedPosts, page, limit); err != nil {
-		slog.Error("error to cache post", slog.String("error", err.Error()))
+	if err := p.memoryCacheRepository.SetPost(ctx, p.contextService.GetUserID(ctx), paginatedPosts, page, limit); err != nil {
+		log.Error("error to cache post", slog.String("error", err.Error()))
 	}
 
 	return paginatedPosts, nil
@@ -234,7 +222,7 @@ func (p *postService) UnlikePost(ctx context.Context, ID uuid.UUID) error {
 	}
 
 	if err := p.postRepository.UnlikePost(ctx, ID, p.contextService.GetUserID(ctx)); err != nil {
-		return fmt.Errorf("error to unlike post: %w", err)
+		return fmt.Errorf("unlike post: %w", err)
 	}
 
 	return nil
@@ -245,7 +233,7 @@ func (p *postService) buildPaginatedResponse(ctx context.Context, page, limit in
 
 	paginatedPosts, err := p.postRepository.GetPaginatedPosts(ctx, userID, page, limit)
 	if err != nil {
-		return nil, fmt.Errorf("error to get paginated posts: %w", err)
+		return nil, fmt.Errorf("get paginated posts: %w", err)
 	}
 
 	postIDMap := make(map[uuid.UUID]*domain.Post)
@@ -276,32 +264,6 @@ func (p *postService) buildPaginatedResponse(ctx context.Context, page, limit in
 	return paginatedResponse, nil
 }
 
-func (p *postService) getCachedPosts(ctx context.Context, page, limit int) (*domain.Pagination[*domain.PostResponse], error) {
-	var cachedFeed domain.Pagination[*domain.PostResponse]
-
-	data, err := p.redisClient.Get(ctx, getKeyCachePost(p.contextService.GetUserID(ctx), page, limit)).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-	if err := jsoniter.UnmarshalFromString(data, &cachedFeed); err != nil {
-		return nil, err
-	}
-	return &cachedFeed, nil
-}
-
-func (p *postService) cachePosts(ctx context.Context, feed *domain.Pagination[*domain.PostResponse], page, limit int) error {
-	data, err := jsoniter.MarshalToString(feed)
-	if err != nil {
-		return err
-	}
-
-	return p.redisClient.Set(ctx, getKeyCachePost(p.contextService.GetUserID(ctx), page, limit), data, 5*time.Minute).Err()
-}
-
 func getKeysFromMap(m map[uuid.UUID]*domain.Post) []uuid.UUID {
 	keys := make([]uuid.UUID, 0, len(m))
 	for k := range m {
@@ -316,8 +278,4 @@ func convertToMap(ids []uuid.UUID) map[uuid.UUID]bool {
 		m[id] = true
 	}
 	return m
-}
-
-func getKeyCachePost(userID uuid.UUID, page, limit int) string {
-	return fmt.Sprintf("user:%s:feed:page:%d:limit:%d", userID, page, limit)
 }

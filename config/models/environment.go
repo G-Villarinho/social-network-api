@@ -9,6 +9,7 @@ type Environment struct {
 	CloudFlare       cloudFlateEnviroment
 	RabbitMQURL      string `env:"RABBITMQ_URL"`
 	SessionExp       int    `env:"SESSION_EXP"`
+	CacheExp         int    `env:"CACHE_EXP"`
 	Hash2FADuration  int    `env:"HASH_2FA_DURATION"`
 	Code2FADuration  int    `env:"CODE_2FA_DURATION"`
 	APIPort          string `env:"API_PORT"`

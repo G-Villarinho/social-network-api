@@ -87,7 +87,6 @@ func main() {
 
 	pkg.Provide(di, service.NewContextService)
 	pkg.Provide(di, service.NewFollowerService)
-	pkg.Provide(di, service.NewLikeQueueService)
 	pkg.Provide(di, service.NewPostService)
 	pkg.Provide(di, service.NewSessionService)
 	pkg.Provide(di, service.NewUserService)

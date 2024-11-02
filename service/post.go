@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/G-Villarinho/social-network/client"
+	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
 	"github.com/go-redis/redis/v8"
@@ -14,11 +16,11 @@ import (
 )
 
 type postService struct {
-	di               *pkg.Di
-	redisClient      *redis.Client
-	postRepository   domain.PostRepository
-	contextService   domain.ContextService
-	likeQueueService domain.LikeQueueService
+	di             *pkg.Di
+	redisClient    *redis.Client
+	postRepository domain.PostRepository
+	contextService domain.ContextService
+	rabbitMQClient client.RabbitMQClient
 }
 
 func NewPostService(di *pkg.Di) (domain.PostService, error) {
@@ -37,17 +39,17 @@ func NewPostService(di *pkg.Di) (domain.PostService, error) {
 		return nil, err
 	}
 
-	likeQueueService, err := pkg.Invoke[domain.LikeQueueService](di)
+	rabbitMQClient, err := pkg.Invoke[client.RabbitMQClient](di)
 	if err != nil {
 		return nil, err
 	}
 
 	return &postService{
-		di:               di,
-		postRepository:   postRepository,
-		contextService:   contextService,
-		redisClient:      redisClient,
-		likeQueueService: likeQueueService,
+		di:             di,
+		postRepository: postRepository,
+		contextService: contextService,
+		redisClient:    redisClient,
+		rabbitMQClient: rabbitMQClient,
 	}, nil
 }
 
@@ -179,12 +181,12 @@ func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
 		return fmt.Errorf("error caching like in Redis: %w", err)
 	}
 
-	payload := domain.LikePayload{
-		UserID: userID,
-		PostID: ID,
-	}
-
-	p.likeQueueService.AddLike(ctx, payload)
+	go func() {
+		message, _ := jsoniter.Marshal(domain.LikePayload{UserID: userID, PostID: ID})
+		if err := p.rabbitMQClient.Publish(config.QueueLikePost, message); err != nil {
+			slog.Error("error to publish like event", slog.String("error", err.Error()))
+		}
+	}()
 	return nil
 }
 

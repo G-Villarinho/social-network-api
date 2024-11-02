@@ -84,6 +84,7 @@ type PostService interface {
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*PostResponse, error)
 	LikePost(ctx context.Context, ID uuid.UUID) error
 	UnlikePost(ctx context.Context, ID uuid.UUID) error
+	ProcessLikePost(ctx context.Context, payload LikePayload) error
 }
 
 type PostRepository interface {
@@ -148,6 +149,13 @@ func (p *Post) ToPostResponse(likesByUser bool) *PostResponse {
 		Title:          p.Title,
 		Content:        p.Content,
 		CreatedAt:      p.CreatedAt,
+	}
+}
+
+func (l *LikePayload) ToLike() *Like {
+	return &Like{
+		UserID: l.UserID,
+		PostID: l.PostID,
 	}
 }
 

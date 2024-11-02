@@ -228,6 +228,33 @@ func (p *postService) UnlikePost(ctx context.Context, ID uuid.UUID) error {
 	return nil
 }
 
+func (p *postService) ProcessLikePost(ctx context.Context, payload domain.LikePayload) error {
+	post, err := p.postRepository.GetPostById(ctx, payload.PostID, false)
+	if err != nil {
+		return fmt.Errorf("post by ID: %w", err)
+	}
+
+	if post == nil {
+		return domain.ErrPostNotFound
+	}
+
+	hasLike, err := p.postRepository.HasUserLikedPost(ctx, payload.PostID, payload.UserID)
+	if err != nil {
+		return fmt.Errorf("error to check if user has liked post: %w", err)
+	}
+
+	if hasLike {
+		return domain.ErrPostAlreadyLiked
+	}
+
+	if err := p.postRepository.LikePost(ctx, *payload.ToLike()); err != nil {
+		return fmt.Errorf("error to like post: %w", err)
+	}
+
+	return nil
+
+}
+
 func (p *postService) getPostPaginatedResponse(ctx context.Context, userID uuid.UUID, page, limit int) (*domain.Pagination[*domain.PostResponse], error) {
 	log := slog.With(
 		slog.String("service", "post"),

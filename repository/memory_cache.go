@@ -71,22 +71,29 @@ func (m *memoryCacheRepository) GetPosts(ctx context.Context, userID uuid.UUID, 
 	return posts, nil
 }
 
-func (m *memoryCacheRepository) GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error) {
+func (m *memoryCacheRepository) GetCachedAndMissingLikes(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, []uuid.UUID, error) {
 	var likedPostIDs []uuid.UUID
+	var missingPostIDs []uuid.UUID
 
 	for _, postID := range postIDs {
-		liked, err := m.redisClient.Get(ctx, getLikeCacheKey(postID, userID)).Result()
+		key := getLikeCacheKey(postID, userID)
+		liked, err := m.redisClient.Get(ctx, key).Result()
 
-		if err == nil && liked == "liked" {
-			likedPostIDs = append(likedPostIDs, postID)
+		if err == redis.Nil {
+			missingPostIDs = append(missingPostIDs, postID)
+			continue
 		}
 
-		if err != nil && err != redis.Nil {
-			return nil, err
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if liked == "liked" {
+			likedPostIDs = append(likedPostIDs, postID)
 		}
 	}
 
-	return likedPostIDs, nil
+	return likedPostIDs, missingPostIDs, nil
 }
 
 func (m *memoryCacheRepository) SetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) error {

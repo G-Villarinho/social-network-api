@@ -40,9 +40,9 @@ start:
 	@echo "Running API..."
 	go run cmd/api/main.go
 
-run-worker:
+worker:
 	@echo "Running worker for upload images..."
-	go run cmd/worker/uploadImages/main.go
+	go run cmd/worker/like_post/main.go
 	@echo "Worker stopped"
 	
 migrations:

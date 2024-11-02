@@ -33,3 +33,12 @@ func (q *queueService) Publish(queueName string, message []byte) error {
 
 	return nil
 }
+
+func (q *queueService) Consume(queueName string) (<-chan []byte, error) {
+	messages, err := q.rabbitMQClient.Consume(queueName)
+	if err != nil {
+		return nil, fmt.Errorf("error consuming message from queue: %w", err)
+	}
+
+	return messages, nil
+}

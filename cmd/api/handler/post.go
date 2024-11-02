@@ -70,7 +70,7 @@ func (p *postHandler) GetPosts(ctx echo.Context) error {
 	}
 	limit, err := strconv.Atoi(ctx.QueryParam("limit"))
 	if err != nil || limit < 1 {
-		limit = 10
+		limit = 20
 	}
 
 	response, err := p.postService.GetPosts(ctx.Request().Context(), page, limit)

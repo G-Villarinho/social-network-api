@@ -188,6 +188,20 @@ func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
 	}
 
 	go func() {
+		pages, err := p.memoryCacheRepository.GetPostPages(context.Background(), userID, ID)
+		if err != nil {
+			log.Error("error getting post pages", slog.String("error", err.Error()))
+			return
+		}
+
+		for _, page := range pages {
+			if err := p.updateFeedCache(ctx, userID, page); err != nil {
+				log.Error("error updating feed cache", slog.String("page", fmt.Sprintf("%d", page)), slog.String("error", err.Error()))
+			}
+		}
+	}()
+
+	go func() {
 		message, err := jsoniter.Marshal(domain.LikePayload{UserID: userID, PostID: ID})
 		if err != nil {
 			log.Error("error to marshal like event", slog.String("error", err.Error()))
@@ -244,6 +258,10 @@ func (p *postService) getPostPaginatedResponse(ctx context.Context, page, limit 
 	postIDMap := make(map[uuid.UUID]*domain.Post)
 	for _, post := range paginatedPosts.Rows {
 		postIDMap[post.ID] = post
+
+		if err := p.memoryCacheRepository.SetPostPages(ctx, userID, post.ID, []int{page}); err != nil {
+			log.Error("error setting post pages", slog.String("postID", post.ID.String()), slog.String("error", err.Error()))
+		}
 	}
 
 	postIDs := getKeysFromMap(postIDMap)
@@ -280,6 +298,21 @@ func (p *postService) getPostPaginatedResponse(ctx context.Context, page, limit 
 	}
 
 	return paginatedResponse, nil
+}
+
+func (p *postService) updateFeedCache(ctx context.Context, userID uuid.UUID, page int) error {
+	limit := 20
+
+	paginatedResponse, err := p.getPostPaginatedResponse(ctx, page, limit)
+	if err != nil {
+		return fmt.Errorf("error updating feed cache: %w", err)
+	}
+
+	if err := p.memoryCacheRepository.SetPost(ctx, userID, paginatedResponse, page, limit); err != nil {
+		return fmt.Errorf("error caching updated feed: %w", err)
+	}
+
+	return nil
 }
 
 func getKeysFromMap(m map[uuid.UUID]*domain.Post) []uuid.UUID {

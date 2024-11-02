@@ -16,11 +16,13 @@ import (
 )
 
 type postService struct {
-	di             *pkg.Di
-	redisClient    *redis.Client
-	postRepository domain.PostRepository
-	contextService domain.ContextService
-	rabbitMQClient client.RabbitMQClient
+	di                    *pkg.Di
+	redisClient           *redis.Client
+	postRepository        domain.PostRepository
+	contextService        domain.ContextService
+	rabbitMQClient        client.RabbitMQClient
+	memoryCacheRepository domain.MemoryCacheRepository
+	queueService          domain.QueueService
 }
 
 func NewPostService(di *pkg.Di) (domain.PostService, error) {
@@ -44,12 +46,24 @@ func NewPostService(di *pkg.Di) (domain.PostService, error) {
 		return nil, err
 	}
 
+	memoryCacheRepository, err := pkg.Invoke[domain.MemoryCacheRepository](di)
+	if err != nil {
+		return nil, err
+	}
+
+	queueService, err := pkg.Invoke[domain.QueueService](di)
+	if err != nil {
+		return nil, err
+	}
+
 	return &postService{
-		di:             di,
-		postRepository: postRepository,
-		contextService: contextService,
-		redisClient:    redisClient,
-		rabbitMQClient: rabbitMQClient,
+		di:                    di,
+		postRepository:        postRepository,
+		contextService:        contextService,
+		redisClient:           redisClient,
+		rabbitMQClient:        rabbitMQClient,
+		memoryCacheRepository: memoryCacheRepository,
+		queueService:          queueService,
 	}, nil
 }
 
@@ -174,19 +188,29 @@ func (p *postService) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*dom
 }
 
 func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
-	userID := p.contextService.GetUserID(ctx)
-	cacheKey := getKeyCacheLike(userID, ID)
+	log := slog.With(
+		slog.String("service", "post"),
+		slog.String("func", "LikePost"),
+	)
 
-	if err := p.redisClient.Set(ctx, cacheKey, "liked", 5*time.Minute).Err(); err != nil {
+	userID := p.contextService.GetUserID(ctx)
+
+	if err := p.memoryCacheRepository.SetPostLike(ctx, ID, userID); err != nil {
 		return fmt.Errorf("error caching like in Redis: %w", err)
 	}
 
 	go func() {
-		message, _ := jsoniter.Marshal(domain.LikePayload{UserID: userID, PostID: ID})
-		if err := p.rabbitMQClient.Publish(config.QueueLikePost, message); err != nil {
-			slog.Error("error to publish like event", slog.String("error", err.Error()))
+		message, err := jsoniter.Marshal(domain.LikePayload{UserID: userID, PostID: ID})
+		if err != nil {
+			log.Error("error to marshal like event", slog.String("error", err.Error()))
+			return
+		}
+
+		if err := p.queueService.Publish(config.QueueLikePost, message); err != nil {
+			log.Error("error to publish like event", slog.String("error", err.Error()))
 		}
 	}()
+
 	return nil
 }
 
@@ -296,8 +320,4 @@ func convertToMap(ids []uuid.UUID) map[uuid.UUID]bool {
 
 func getKeyCachePost(userID uuid.UUID, page, limit int) string {
 	return fmt.Sprintf("user:%s:feed:page:%d:limit:%d", userID, page, limit)
-}
-
-func getKeyCacheLike(userID, postID uuid.UUID) string {
-	return fmt.Sprintf("like:%s:%s", userID, postID)
 }

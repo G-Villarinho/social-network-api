@@ -96,7 +96,7 @@ type PostRepository interface {
 	LikePost(ctx context.Context, like Like) error
 	UnlikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error
 	HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
-	GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]struct{}, error)
+	GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]bool, error)
 	GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error)
 }
 

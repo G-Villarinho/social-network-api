@@ -92,6 +92,7 @@ func main() {
 	pkg.Provide(di, service.NewUserService)
 
 	pkg.Provide(di, repository.NewFollowerRepository)
+	pkg.Provide(di, repository.NewMemoryCacheRepository)
 	pkg.Provide(di, repository.NewPostRepository)
 	pkg.Provide(di, repository.NewSessionRepository)
 	pkg.Provide(di, repository.NewUserRepository)

@@ -71,6 +71,34 @@ func (m *memoryCacheRepository) GetPosts(ctx context.Context, userID uuid.UUID, 
 	return posts, nil
 }
 
+func (m *memoryCacheRepository) GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error) {
+	var likedPostIDs []uuid.UUID
+
+	for _, postID := range postIDs {
+		liked, err := m.redisClient.Get(ctx, getLikeCacheKey(postID, userID)).Result()
+
+		if err == nil && liked == "liked" {
+			likedPostIDs = append(likedPostIDs, postID)
+		}
+
+		if err != nil && err != redis.Nil {
+			return nil, err
+		}
+	}
+
+	return likedPostIDs, nil
+}
+
+func (m *memoryCacheRepository) SetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) error {
+	for _, postID := range postIDs {
+		key := getLikeCacheKey(postID, userID)
+		if err := m.redisClient.Set(ctx, key, "liked", time.Duration(config.Env.CacheExp)*time.Minute).Err(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func getLikeCacheKey(postID uuid.UUID, userID uuid.UUID) string {
 	return fmt.Sprintf("like:%s:%s", postID.String(), userID.String())
 }

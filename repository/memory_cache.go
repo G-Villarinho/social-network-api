@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/G-Villarinho/social-network/config"
@@ -110,31 +109,6 @@ func (m *memoryCacheRepository) SetLikesByPostIDs(ctx context.Context, userID uu
 		}
 	}
 	return nil
-}
-
-func (m *memoryCacheRepository) SetPostPages(ctx context.Context, userID uuid.UUID, postID uuid.UUID, pages []int) error {
-	key := fmt.Sprintf("postPages:%s:%s", userID.String(), postID.String())
-	pageValues := make([]interface{}, len(pages))
-	for i, page := range pages {
-		pageValues[i] = page
-	}
-	return m.redisClient.SAdd(ctx, key, pageValues...).Err()
-}
-
-func (m *memoryCacheRepository) GetPostPages(ctx context.Context, userID uuid.UUID, postID uuid.UUID) ([]int, error) {
-	key := fmt.Sprintf("postPages:%s:%s", userID.String(), postID.String())
-	pageStrings, err := m.redisClient.SMembers(ctx, key).Result()
-	if err != nil {
-		return nil, err
-	}
-
-	pages := make([]int, len(pageStrings))
-	for i, pageStr := range pageStrings {
-		page, _ := strconv.Atoi(pageStr)
-		pages[i] = page
-	}
-
-	return pages, nil
 }
 
 func getLikeCacheKey(postID uuid.UUID, userID uuid.UUID) string {

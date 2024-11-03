@@ -203,27 +203,28 @@ func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
 }
 
 func (p *postService) UnlikePost(ctx context.Context, ID uuid.UUID) error {
-	post, err := p.postRepository.GetPostById(ctx, ID, false)
-	if err != nil {
-		return fmt.Errorf("error to get post by ID: %w", err)
+	log := slog.With(
+		slog.String("service", "post"),
+		slog.String("func", "UnlikePost"),
+	)
+
+	userID := p.contextService.GetUserID(ctx)
+
+	if err := p.memoryCacheRepository.RemovePostLike(ctx, ID, userID); err != nil {
+		return fmt.Errorf("error deleting like from Redis: %w", err)
 	}
 
-	if post == nil {
-		return domain.ErrPostNotFound
-	}
+	go func() {
+		message, err := jsoniter.Marshal(domain.LikePayload{UserID: userID, PostID: ID})
+		if err != nil {
+			log.Error("error to marshal unlike event", slog.String("error", err.Error()))
+			return
+		}
 
-	hasLiked, err := p.postRepository.HasUserLikedPost(ctx, ID, p.contextService.GetUserID(ctx))
-	if err != nil {
-		return fmt.Errorf("error to check if user has liked post: %w", err)
-	}
-
-	if !hasLiked {
-		return domain.ErrPostNotLiked
-	}
-
-	if err := p.postRepository.UnlikePost(ctx, ID, p.contextService.GetUserID(ctx)); err != nil {
-		return fmt.Errorf("unlike post: %w", err)
-	}
+		if err := p.queueService.Publish(config.QueueUnlikePost, message); err != nil {
+			log.Error("error to publish unlike event", slog.String("error", err.Error()))
+		}
+	}()
 
 	return nil
 }
@@ -252,7 +253,32 @@ func (p *postService) ProcessLikePost(ctx context.Context, payload domain.LikePa
 	}
 
 	return nil
+}
 
+func (p *postService) ProcessUnlikePost(ctx context.Context, ID uuid.UUID) error {
+	post, err := p.postRepository.GetPostById(ctx, ID, false)
+	if err != nil {
+		return fmt.Errorf("error to get post by ID: %w", err)
+	}
+
+	if post == nil {
+		return domain.ErrPostNotFound
+	}
+
+	hasLiked, err := p.postRepository.HasUserLikedPost(ctx, ID, p.contextService.GetUserID(ctx))
+	if err != nil {
+		return fmt.Errorf("error to check if user has liked post: %w", err)
+	}
+
+	if !hasLiked {
+		return domain.ErrPostNotLiked
+	}
+
+	if err := p.postRepository.UnlikePost(ctx, ID, p.contextService.GetUserID(ctx)); err != nil {
+		return fmt.Errorf("unlike post: %w", err)
+	}
+
+	return nil
 }
 
 func (p *postService) getPostPaginatedResponse(ctx context.Context, userID uuid.UUID, page, limit int) (*domain.Pagination[*domain.PostResponse], error) {

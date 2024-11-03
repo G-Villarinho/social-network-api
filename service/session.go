@@ -40,6 +40,7 @@ func (s *sessionService) CreateSession(ctx context.Context, user domain.User) (s
 		Token:     token,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
+		Username:  user.Username,
 		Email:     user.Email,
 		Avatar:    user.Avatar,
 	}
@@ -88,6 +89,7 @@ func (s *sessionService) createToken(user domain.User) (string, error) {
 		"firstName": user.FirstName,
 		"lastName":  user.LastName,
 		"email":     user.Email,
+		"username":  user.Username,
 		"avatar":    user.Avatar,
 	}
 

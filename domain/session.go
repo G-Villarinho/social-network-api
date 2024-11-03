@@ -20,6 +20,7 @@ type Session struct {
 	Token     string    `json:"token"`
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
+	Username  string    `json:"username"`
 	Email     string    `json:"email"`
 	Avatar    string    `json:"avatar"`
 }

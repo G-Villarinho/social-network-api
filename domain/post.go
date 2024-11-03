@@ -85,6 +85,7 @@ type PostService interface {
 	LikePost(ctx context.Context, ID uuid.UUID) error
 	UnlikePost(ctx context.Context, ID uuid.UUID) error
 	ProcessLikePost(ctx context.Context, payload LikePayload) error
+	ProcessUnlikePost(ctx context.Context, payload LikePayload) error
 }
 
 type PostRepository interface {

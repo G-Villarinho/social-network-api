@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"log/slog"
+	"net/http"
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
@@ -19,17 +20,15 @@ func EnsureAuthenticated(di *pkg.Di) echo.MiddlewareFunc {
 			}
 
 			cookie, err := ctx.Cookie("x.Token")
-			if err != nil {
-				return domain.AccessDeniedAPIErrorResponse(ctx)
-			}
-
-			if cookie == nil || cookie.Value == "" {
+			if err != nil || cookie == nil || cookie.Value == "" {
+				clearAuthCookie(ctx)
 				return domain.AccessDeniedAPIErrorResponse(ctx)
 			}
 
 			session, err := sessionService.GetSessionByToken(ctx.Request().Context(), cookie.Value)
 			if err != nil {
 				if err == domain.ErrTokenInvalid || err == domain.ErrSessionMismatch || err == domain.ErrSessionNotFound {
+					clearAuthCookie(ctx)
 					return domain.AccessDeniedAPIErrorResponse(ctx)
 				}
 				slog.Error(err.Error())
@@ -42,4 +41,15 @@ func EnsureAuthenticated(di *pkg.Di) echo.MiddlewareFunc {
 			return next(ctx)
 		}
 	}
+}
+
+func clearAuthCookie(ctx echo.Context) {
+	cookie := new(http.Cookie)
+	cookie.Name = "x.Token"
+	cookie.Value = ""
+	cookie.Path = "/"
+	cookie.HttpOnly = true
+	cookie.MaxAge = -1
+
+	ctx.SetCookie(cookie)
 }

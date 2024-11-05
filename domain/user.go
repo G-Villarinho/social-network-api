@@ -45,17 +45,22 @@ type User struct {
 }
 
 type UserPayload struct {
-	FirstName string `json:"firstName" validate:"required,max=255"`
-	LastName  string `json:"lastName" validate:"required,max=255"`
-	Email     string `json:"email" validate:"required,email,max=255"`
-	Username  string `json:"username" validate:"required,username,min=3,max=20"`
-	Password  string `json:"password" validate:"required,strongpassword"`
+	FirstName       string `json:"firstName" validate:"required,max=255"`
+	LastName        string `json:"lastName" validate:"required,max=255"`
+	Email           string `json:"email" validate:"required,email,max=255"`
+	Username        string `json:"username" validate:"required,username,min=3,max=20"`
+	Password        string `json:"password" validate:"required,strongpassword"`
+	ConfirmPassword string `json:"confirmPassword" validate:"required,eqfield=Password"`
 }
 
 type UserUpdatePayload struct {
 	FirstName string `json:"firstName" validate:"omitempty,min=1,max=255"`
 	LastName  string `json:"lastName" validate:"omitempty,min=1,max=255"`
 	Username  string `json:"username" validate:"omitempty,username,min=3,max=20"`
+}
+
+type CheckUsernamePayload struct {
+	Username string `json:"username" validate:"required,username"`
 }
 
 type UserResponse struct {
@@ -74,6 +79,10 @@ type UserFollowerResponse struct {
 	Username  string    `json:"username"`
 }
 
+type UsernameSuggestionResponse struct {
+	Suggestions []string `json:"suggestions"`
+}
+
 type SignInPayload struct {
 	EmailOrUsername string `json:"emailOrUsername" validate:"required"`
 	Password        string `json:"password" validate:"required,min=8"`
@@ -86,6 +95,7 @@ type UserHandler interface {
 	GetUser(ctx echo.Context) error
 	UpdateUser(ctx echo.Context) error
 	DeleteUser(ctx echo.Context) error
+	CheckUsername(ctx echo.Context) error
 }
 
 type UserService interface {
@@ -95,6 +105,7 @@ type UserService interface {
 	GetUser(ctx context.Context) (*UserResponse, error)
 	UpdateUser(ctx context.Context, payload UserUpdatePayload) error
 	DeleteUser(ctx context.Context) error
+	CheckUsername(ctx context.Context, payload CheckUsernamePayload) (*UsernameSuggestionResponse, error)
 }
 
 type UserRepository interface {
@@ -106,6 +117,7 @@ type UserRepository interface {
 	GetUserByEmailOrUsername(ctx context.Context, emailOrUsername string) (*User, error)
 	DeleteUser(ctx context.Context, ID uuid.UUID) error
 	GetUserByUsernameOrEmail(ctx context.Context, username, email string) (*User, error)
+	CheckUsername(ctx context.Context, username string) (bool, error)
 }
 
 func (u *UserPayload) trim() {
@@ -123,6 +135,10 @@ func (uup *UserUpdatePayload) trim() {
 	uup.LastName = strings.TrimSpace(uup.LastName)
 }
 
+func (c *CheckUsernamePayload) trim() {
+	c.Username = strings.TrimSpace(c.Username)
+}
+
 func (u *UserPayload) Validate() ValidationErrors {
 	u.trim()
 	return ValidateStruct(u)
@@ -131,6 +147,11 @@ func (u *UserPayload) Validate() ValidationErrors {
 func (s *SignInPayload) Validate() ValidationErrors {
 	s.trim()
 	return ValidateStruct(s)
+}
+
+func (c *CheckUsernamePayload) Validate() ValidationErrors {
+	c.trim()
+	return ValidateStruct(c)
 }
 
 func (uup *UserUpdatePayload) Validate() ValidationErrors {

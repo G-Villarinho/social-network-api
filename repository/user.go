@@ -125,3 +125,17 @@ func (u *userRepository) GetUserByUsernameOrEmail(ctx context.Context, username,
 
 	return user, nil
 }
+
+func (u *userRepository) CheckUsername(ctx context.Context, username string) (bool, error) {
+	var exists bool
+
+	err := u.db.WithContext(ctx).
+		Raw("SELECT EXISTS(SELECT 1 FROM User WHERE username = ?)", username).
+		Scan(&exists).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}

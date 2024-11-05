@@ -7,12 +7,14 @@ import (
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/pkg"
 	"github.com/G-Villarinho/social-network/secure"
+	"github.com/G-Villarinho/social-network/utils"
 )
 
 type userService struct {
 	di             *pkg.Di
 	userRepository domain.UserRepository
 	sessionService domain.SessionService
+	contextService domain.ContextService
 }
 
 func NewUserService(di *pkg.Di) (domain.UserService, error) {
@@ -26,10 +28,16 @@ func NewUserService(di *pkg.Di) (domain.UserService, error) {
 		return nil, err
 	}
 
+	contextService, err := pkg.Invoke[domain.ContextService](di)
+	if err != nil {
+		return nil, err
+	}
+
 	return &userService{
 		di:             di,
 		userRepository: userRepository,
 		sessionService: sessionService,
+		contextService: contextService,
 	}, nil
 }
 
@@ -155,18 +163,30 @@ func (u *userService) UpdateUser(ctx context.Context, payload domain.UserUpdateP
 }
 
 func (u *userService) DeleteUser(ctx context.Context) error {
-	session, ok := ctx.Value(domain.SessionKey).(*domain.Session)
-	if !ok {
-		return domain.ErrSessionNotFound
-	}
+	userID := u.contextService.GetUserID(ctx)
 
-	if err := u.userRepository.DeleteUser(ctx, session.UserID); err != nil {
+	if err := u.userRepository.DeleteUser(ctx, userID); err != nil {
 		return err
 	}
 
-	if err := u.sessionService.DeleteSession(ctx, session.UserID); err != nil {
+	if err := u.sessionService.DeleteSession(ctx, userID); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (u *userService) CheckUsername(ctx context.Context, payload domain.CheckUsernamePayload) (*domain.UsernameSuggestionResponse, error) {
+	exits, err := u.userRepository.CheckUsername(ctx, payload.Username)
+	if err != nil {
+		return nil, fmt.Errorf("check username: %w", err)
+	}
+
+	if exits {
+		return &domain.UsernameSuggestionResponse{
+			Suggestions: utils.GenerateSuggestions(payload.Username, 3),
+		}, domain.ErrUsernameAlreadyExists
+	}
+
+	return nil, nil
 }

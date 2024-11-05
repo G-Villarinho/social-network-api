@@ -85,7 +85,7 @@ func (u *userHandler) SignIn(ctx echo.Context) error {
 	token, err := u.userService.SignIn(ctx.Request().Context(), payload)
 	if err != nil {
 		if err == domain.ErrUserNotFound || err == domain.ErrInvalidPassword {
-			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusUnauthorized, nil, "Unauthorized", "Invalid email or password. Please check your credentials and try again.")
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusUnauthorized, nil, "Unauthorized", "Invalid email or username and password. Please check your credentials and try again.")
 		}
 
 		log.Error(err.Error())
@@ -210,6 +210,35 @@ func (u *userHandler) DeleteUser(ctx echo.Context) error {
 	}
 
 	ctx.SetCookie(cookie)
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (u *userHandler) CheckUsername(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "CheckUsername"),
+	)
+
+	var payload domain.CheckUsernamePayload
+	if err := jsoniter.NewDecoder(ctx.Request().Body).Decode(&payload); err != nil {
+		log.Warn("error to decode JSON payload", slog.String("error", err.Error()))
+		return domain.CannotBindPayloadAPIErrorResponse(ctx)
+	}
+
+	if validationErrors := payload.Validate(); validationErrors != nil {
+		return domain.NewValidationAPIErrorResponse(ctx, http.StatusUnprocessableEntity, validationErrors)
+	}
+
+	response, err := u.userService.CheckUsername(ctx.Request().Context(), payload)
+	if err != nil {
+		log.Error(err.Error())
+		if err == domain.ErrUsernameAlreadyExists {
+			return ctx.JSON(http.StatusConflict, response)
+		}
+
+		return domain.InternalServerAPIErrorResponse(ctx)
+	}
 
 	return ctx.NoContent(http.StatusOK)
 }

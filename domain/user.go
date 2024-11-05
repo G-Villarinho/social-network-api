@@ -63,6 +63,10 @@ type CheckUsernamePayload struct {
 	Username string `json:"username" validate:"required,username"`
 }
 
+type CheckPasswordStrongPayload struct {
+	Password string `json:"password" validate:"required,strongpassword"`
+}
+
 type UserResponse struct {
 	ID        string `json:"id"`
 	FirstName string `json:"firstName"`
@@ -96,6 +100,7 @@ type UserHandler interface {
 	UpdateUser(ctx echo.Context) error
 	DeleteUser(ctx echo.Context) error
 	CheckUsername(ctx echo.Context) error
+	CheckPasswordStrong(ctx echo.Context) error
 }
 
 type UserService interface {
@@ -149,11 +154,6 @@ func (s *SignInPayload) Validate() ValidationErrors {
 	return ValidateStruct(s)
 }
 
-func (c *CheckUsernamePayload) Validate() ValidationErrors {
-	c.trim()
-	return ValidateStruct(c)
-}
-
 func (uup *UserUpdatePayload) Validate() ValidationErrors {
 	uup.trim()
 
@@ -162,6 +162,15 @@ func (uup *UserUpdatePayload) Validate() ValidationErrors {
 	}
 
 	return ValidateStruct(uup)
+}
+
+func (c *CheckUsernamePayload) Validate() ValidationErrors {
+	c.trim()
+	return ValidateStruct(c)
+}
+
+func (c *CheckPasswordStrongPayload) Validate() ValidationErrors {
+	return ValidateStruct(c)
 }
 
 func (u *User) ToUserFollowerResponse() *UserFollowerResponse {

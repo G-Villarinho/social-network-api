@@ -47,6 +47,11 @@ func (u *userHandler) CreateUser(ctx echo.Context) error {
 	token, err := u.userService.CreateUser(ctx.Request().Context(), payload)
 	if err != nil {
 		log.Error(err.Error())
+
+		if err == domain.ErrUsernameAlreadyExists {
+			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusConflict, nil, "conflict", "The username already exists. Please try again with a different username.")
+		}
+
 		if err == domain.ErrEmailAlreadyRegister {
 			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusConflict, nil, "conflict", "The email already registered. Please try again with a different email.")
 		}
@@ -238,6 +243,25 @@ func (u *userHandler) CheckUsername(ctx echo.Context) error {
 		}
 
 		return domain.InternalServerAPIErrorResponse(ctx)
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (u *userHandler) CheckPasswordStrong(ctx echo.Context) error {
+	log := slog.With(
+		slog.String("handler", "user"),
+		slog.String("func", "CheckPasswordStrong"),
+	)
+
+	var payload domain.CheckPasswordStrongPayload
+	if err := jsoniter.NewDecoder(ctx.Request().Body).Decode(&payload); err != nil {
+		log.Warn("error to decode JSON payload", slog.String("error", err.Error()))
+		return domain.CannotBindPayloadAPIErrorResponse(ctx)
+	}
+
+	if validationErrors := payload.Validate(); validationErrors != nil {
+		return domain.NewValidationAPIErrorResponse(ctx, http.StatusUnprocessableEntity, validationErrors)
 	}
 
 	return ctx.NoContent(http.StatusOK)

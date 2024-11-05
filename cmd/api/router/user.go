@@ -24,4 +24,5 @@ func setupUserRoutes(e *echo.Echo, di *pkg.Di) {
 	group.PUT("", userHandler.UpdateUser, middleware.EnsureAuthenticated(di))
 	group.DELETE("", userHandler.DeleteUser, middleware.EnsureAuthenticated(di))
 	group.POST("/check-username", userHandler.CheckUsername)
+	group.POST("/check-password-strong", userHandler.CheckPasswordStrong)
 }

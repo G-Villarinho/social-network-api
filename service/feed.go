@@ -6,29 +6,29 @@ import (
 	"log/slog"
 
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/google/uuid"
 )
 
 type feedService struct {
-	di                    *pkg.Di
+	di                    *internal.Di
 	postRepository        domain.PostRepository
 	memoryCacheRepository domain.MemoryCacheRepository
 	contextService        domain.ContextService
 }
 
-func NewFeedService(di *pkg.Di) (domain.FeedService, error) {
-	postRepository, err := pkg.Invoke[domain.PostRepository](di)
+func NewFeedService(di *internal.Di) (domain.FeedService, error) {
+	postRepository, err := internal.Invoke[domain.PostRepository](di)
 	if err != nil {
 		return nil, err
 	}
 
-	memoryCacheRepository, err := pkg.Invoke[domain.MemoryCacheRepository](di)
+	memoryCacheRepository, err := internal.Invoke[domain.MemoryCacheRepository](di)
 	if err != nil {
 		return nil, err
 	}
 
-	contextService, err := pkg.Invoke[domain.ContextService](di)
+	contextService, err := internal.Invoke[domain.ContextService](di)
 	if err != nil {
 		return nil, err
 	}

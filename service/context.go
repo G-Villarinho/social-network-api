@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/google/uuid"
 )
 
 type contextService struct {
-	di *pkg.Di
+	di *internal.Di
 }
 
-func NewContextService(di *pkg.Di) (domain.ContextService, error) {
+func NewContextService(di *internal.Di) (domain.ContextService, error) {
 	return &contextService{di: di}, nil
 }
 

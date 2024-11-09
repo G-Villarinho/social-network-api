@@ -6,15 +6,16 @@ import (
 	"time"
 
 	"github.com/G-Villarinho/social-network/domain"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/G-Villarinho/social-network/middleware"
-	"github.com/G-Villarinho/social-network/pkg"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
+
 	"golang.org/x/time/rate"
 )
 
-func setupPostRoutes(e *echo.Echo, di *pkg.Di) {
-	postHandler, err := pkg.Invoke[domain.PostHandler](di)
+func setupPostRoutes(e *echo.Echo, di *internal.Di) {
+	postHandler, err := internal.Invoke[domain.PostHandler](di)
 	if err != nil {
 		log.Fatal("error to create user handler: ", err)
 	}

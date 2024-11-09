@@ -5,30 +5,30 @@ import (
 	"fmt"
 
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/G-Villarinho/social-network/secure"
 	"github.com/G-Villarinho/social-network/utils"
 )
 
 type userService struct {
-	di             *pkg.Di
+	di             *internal.Di
 	userRepository domain.UserRepository
 	sessionService domain.SessionService
 	contextService domain.ContextService
 }
 
-func NewUserService(di *pkg.Di) (domain.UserService, error) {
-	userRepository, err := pkg.Invoke[domain.UserRepository](di)
+func NewUserService(di *internal.Di) (domain.UserService, error) {
+	userRepository, err := internal.Invoke[domain.UserRepository](di)
 	if err != nil {
 		return nil, err
 	}
 
-	sessionService, err := pkg.Invoke[domain.SessionService](di)
+	sessionService, err := internal.Invoke[domain.SessionService](di)
 	if err != nil {
 		return nil, err
 	}
 
-	contextService, err := pkg.Invoke[domain.ContextService](di)
+	contextService, err := internal.Invoke[domain.ContextService](di)
 	if err != nil {
 		return nil, err
 	}

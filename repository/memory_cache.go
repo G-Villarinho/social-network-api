@@ -7,19 +7,19 @@ import (
 
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 )
 
 type memoryCacheRepository struct {
-	di          *pkg.Di
+	di          *internal.Di
 	redisClient *redis.Client
 }
 
-func NewMemoryCacheRepository(di *pkg.Di) (domain.MemoryCacheRepository, error) {
-	redisClient, err := pkg.Invoke[*redis.Client](di)
+func NewMemoryCacheRepository(di *internal.Di) (domain.MemoryCacheRepository, error) {
+	redisClient, err := internal.Invoke[*redis.Client](di)
 	if err != nil {
 		return nil, err
 	}

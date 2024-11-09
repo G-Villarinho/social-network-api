@@ -6,19 +6,20 @@ import (
 	"strconv"
 
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/google/uuid"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/labstack/echo/v4"
 )
 
 type postHandler struct {
-	di          *pkg.Di
+	di          *internal.Di
 	postService domain.PostService
 }
 
-func NewPostHandler(di *pkg.Di) (domain.PostHandler, error) {
-	postService, err := pkg.Invoke[domain.PostService](di)
+func NewPostHandler(di *internal.Di) (domain.PostHandler, error) {
+	postService, err := internal.Invoke[domain.PostService](di)
 	if err != nil {
 		return nil, err
 	}

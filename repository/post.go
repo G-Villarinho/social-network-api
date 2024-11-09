@@ -5,25 +5,26 @@ import (
 	"fmt"
 
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/go-redis/redis/v8"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type postRepository struct {
-	di          *pkg.Di
+	di          *internal.Di
 	db          *gorm.DB
 	redisClient *redis.Client
 }
 
-func NewPostRepository(di *pkg.Di) (domain.PostRepository, error) {
-	db, err := pkg.Invoke[*gorm.DB](di)
+func NewPostRepository(di *internal.Di) (domain.PostRepository, error) {
+	db, err := internal.Invoke[*gorm.DB](di)
 	if err != nil {
 		return nil, err
 	}
 
-	redisClient, err := pkg.Invoke[*redis.Client](di)
+	redisClient, err := internal.Invoke[*redis.Client](di)
 	if err != nil {
 		return nil, err
 	}

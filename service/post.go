@@ -7,36 +7,37 @@ import (
 
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
+
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 )
 
 type postService struct {
-	di                    *pkg.Di
+	di                    *internal.Di
 	postRepository        domain.PostRepository
 	contextService        domain.ContextService
 	memoryCacheRepository domain.MemoryCacheRepository
 	queueService          domain.QueueService
 }
 
-func NewPostService(di *pkg.Di) (domain.PostService, error) {
-	postRepository, err := pkg.Invoke[domain.PostRepository](di)
+func NewPostService(di *internal.Di) (domain.PostService, error) {
+	postRepository, err := internal.Invoke[domain.PostRepository](di)
 	if err != nil {
 		return nil, err
 	}
 
-	contextService, err := pkg.Invoke[domain.ContextService](di)
+	contextService, err := internal.Invoke[domain.ContextService](di)
 	if err != nil {
 		return nil, err
 	}
 
-	memoryCacheRepository, err := pkg.Invoke[domain.MemoryCacheRepository](di)
+	memoryCacheRepository, err := internal.Invoke[domain.MemoryCacheRepository](di)
 	if err != nil {
 		return nil, err
 	}
 
-	queueService, err := pkg.Invoke[domain.QueueService](di)
+	queueService, err := internal.Invoke[domain.QueueService](di)
 	if err != nil {
 		return nil, err
 	}

@@ -5,19 +5,20 @@ import (
 	"net/http"
 
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
 
+	"github.com/G-Villarinho/social-network/internal"
 	jsoniter "github.com/json-iterator/go"
+
 	"github.com/labstack/echo/v4"
 )
 
 type userHandler struct {
-	di          *pkg.Di
+	di          *internal.Di
 	userService domain.UserService
 }
 
-func NewUserHandler(di *pkg.Di) (domain.UserHandler, error) {
-	userService, err := pkg.Invoke[domain.UserService](di)
+func NewUserHandler(di *internal.Di) (domain.UserHandler, error) {
+	userService, err := internal.Invoke[domain.UserService](di)
 	if err != nil {
 		return nil, err
 	}

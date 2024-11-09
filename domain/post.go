@@ -33,16 +33,6 @@ type Post struct {
 	UpdatedAt time.Time `gorm:"column:updatedAt;default:null"`
 }
 
-type Like struct {
-	ID        uuid.UUID `gorm:"column:id;type:char(36);primaryKey"`
-	UserID    uuid.UUID `gorm:"column:userID;type:char(36);not null"`
-	PostID    uuid.UUID `gorm:"column:postID;type:char(36);not null"`
-	Post      Post      `gorm:"foreignKey:PostID;constraint:OnDelete:CASCADE"`
-	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	CreatedAt time.Time `gorm:"column:createdAt;not null"`
-	UpdatedAt time.Time `gorm:"column:updatedAt;default:null"`
-}
-
 type PostPayload struct {
 	Title   string `json:"title" validate:"required,max=50"`
 	Content string `json:"content" validate:"required,max=255"`
@@ -51,11 +41,6 @@ type PostPayload struct {
 type PostUpdatePayload struct {
 	Title   string `json:"title" validate:"omitempty,max=50"`
 	Content string `json:"content" validate:"omitempty,max=255"`
-}
-
-type LikePayload struct {
-	UserID uuid.UUID `json:"userId"`
-	PostID uuid.UUID `json:"postId"`
 }
 
 type PostResponse struct {
@@ -106,10 +91,6 @@ type PostRepository interface {
 	GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error)
 }
 
-type LikeQueueService interface {
-	AddLike(ctx context.Context, payload LikePayload)
-}
-
 func (p *PostPayload) trim() {
 	p.Title = strings.TrimSpace(p.Title)
 	p.Content = strings.TrimSpace(p.Content)
@@ -157,13 +138,6 @@ func (p *Post) ToPostResponse(likesByUser bool) *PostResponse {
 	}
 }
 
-func (l *LikePayload) ToLike() *Like {
-	return &Like{
-		UserID: l.UserID,
-		PostID: l.PostID,
-	}
-}
-
 func (p *Post) Update(payload PostUpdatePayload) {
 	if payload.Title != "" {
 		p.Title = payload.Title
@@ -186,20 +160,5 @@ func (p *Post) BeforeCreate(tx *gorm.DB) (err error) {
 
 func (p *Post) BeforeUpdate(tx *gorm.DB) (err error) {
 	p.UpdatedAt = time.Now().UTC()
-	return
-}
-
-func (Like) TableName() string {
-	return "Like"
-}
-
-func (l *Like) BeforeCreate(tx *gorm.DB) (err error) {
-	l.ID = uuid.New()
-	l.CreatedAt = time.Now().UTC()
-	return
-}
-
-func (l *Like) BeforeUpdate(tx *gorm.DB) (err error) {
-	l.UpdatedAt = time.Now().UTC()
 	return
 }

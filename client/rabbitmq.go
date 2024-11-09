@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/G-Villarinho/social-network/config"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
+
 	"github.com/rabbitmq/amqp091-go"
 )
 
@@ -16,12 +17,12 @@ type RabbitMQClient interface {
 }
 
 type rabbitMQClient struct {
-	di         *pkg.Di
+	di         *internal.Di
 	connection *amqp091.Connection
 	channel    *amqp091.Channel
 }
 
-func NewRabbitMQClient(di *pkg.Di) (RabbitMQClient, error) {
+func NewRabbitMQClient(di *internal.Di) (RabbitMQClient, error) {
 	return &rabbitMQClient{
 		di: di,
 	}, nil

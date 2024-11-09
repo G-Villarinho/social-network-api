@@ -60,26 +60,8 @@ func (p *postService) CreatePost(ctx context.Context, payload domain.PostPayload
 }
 
 func (p *postService) GetPosts(ctx context.Context, page int, limit int) (*domain.Pagination[*domain.PostResponse], error) {
-	log := slog.With(
-		slog.String("service", "post"),
-		slog.String("func", "GetPosts"),
-	)
 
-	cachedFeed, err := p.memoryCacheRepository.GetPosts(ctx, p.contextService.GetUserID(ctx), page, limit)
-	if err == nil && cachedFeed != nil {
-		return cachedFeed, nil
-	}
-
-	paginatedPosts, err := p.getPostPaginatedResponse(ctx, p.contextService.GetUserID(ctx), page, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := p.memoryCacheRepository.SetPost(ctx, p.contextService.GetUserID(ctx), paginatedPosts, page, limit); err != nil {
-		log.Error("error to cache post", slog.String("error", err.Error()))
-	}
-
-	return paginatedPosts, nil
+	return nil, nil
 }
 
 func (p *postService) GetPostById(ctx context.Context, ID uuid.UUID) (*domain.PostResponse, error) {
@@ -279,72 +261,4 @@ func (p *postService) ProcessUnlikePost(ctx context.Context, payload domain.Like
 	}
 
 	return nil
-}
-
-func (p *postService) getPostPaginatedResponse(ctx context.Context, userID uuid.UUID, page, limit int) (*domain.Pagination[*domain.PostResponse], error) {
-	log := slog.With(
-		slog.String("service", "post"),
-		slog.String("func", "getPostPaginatedResponse"),
-	)
-
-	paginatedPosts, err := p.postRepository.GetPaginatedPosts(ctx, userID, page, limit)
-	if err != nil {
-		return nil, fmt.Errorf("get paginated posts: %w", err)
-	}
-
-	postIDMap := make(map[uuid.UUID]*domain.Post)
-	for _, post := range paginatedPosts.Rows {
-		postIDMap[post.ID] = post
-	}
-
-	postIDs := getKeysFromMap(postIDMap)
-	likedPostIDs, missingPostIDs, err := p.memoryCacheRepository.GetCachedAndMissingLikes(ctx, userID, postIDs)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving likes from Redis: %w", err)
-	}
-
-	if len(missingPostIDs) > 0 {
-		dbLikedPostIDs, err := p.postRepository.GetLikesByPostIDs(ctx, userID, missingPostIDs)
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving missing likes from database: %w", err)
-		}
-		likedPostIDs = append(likedPostIDs, dbLikedPostIDs...)
-
-		if err := p.memoryCacheRepository.SetLikesByPostIDs(ctx, userID, dbLikedPostIDs); err != nil {
-			log.Error("error caching likes in Redis", slog.String("error", err.Error()))
-		}
-	}
-
-	likedPostIDMap := convertToMap(likedPostIDs)
-
-	paginatedResponse := &domain.Pagination[*domain.PostResponse]{
-		Limit:      paginatedPosts.Limit,
-		Page:       paginatedPosts.Page,
-		TotalRows:  paginatedPosts.TotalRows,
-		TotalPages: paginatedPosts.TotalPages,
-		Rows:       make([]*domain.PostResponse, 0, len(paginatedPosts.Rows)),
-	}
-
-	for _, post := range paginatedPosts.Rows {
-		likesByUser := likedPostIDMap[post.ID]
-		paginatedResponse.Rows = append(paginatedResponse.Rows, post.ToPostResponse(likesByUser))
-	}
-
-	return paginatedResponse, nil
-}
-
-func getKeysFromMap(m map[uuid.UUID]*domain.Post) []uuid.UUID {
-	keys := make([]uuid.UUID, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func convertToMap(ids []uuid.UUID) map[uuid.UUID]bool {
-	m := make(map[uuid.UUID]bool, len(ids))
-	for _, id := range ids {
-		m[id] = true
-	}
-	return m
 }

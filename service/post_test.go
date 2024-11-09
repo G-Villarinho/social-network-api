@@ -150,7 +150,7 @@ func TestGetPosts_CacheMiss_ReturnsRepositoryFeed(t *testing.T) {
 	}
 
 	repoFeedResponse := domain.Map(repoFeed, func(post *domain.Post) *domain.PostResponse {
-		return post.ToPostResponse(false)
+		return post.ToPostResponse()
 	})
 
 	contextServiceMock.On("GetUserID", ctx).Return(userID)

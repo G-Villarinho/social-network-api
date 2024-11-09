@@ -86,13 +86,16 @@ func main() {
 	internal.Provide(di, handler.NewUserHandler)
 
 	internal.Provide(di, service.NewContextService)
+	internal.Provide(di, service.NewFeedService)
 	internal.Provide(di, service.NewFollowerService)
+	internal.Provide(di, service.NewLikeService)
 	internal.Provide(di, service.NewPostService)
 	internal.Provide(di, service.NewQueueService)
 	internal.Provide(di, service.NewSessionService)
 	internal.Provide(di, service.NewUserService)
 
 	internal.Provide(di, repository.NewFollowerRepository)
+	internal.Provide(di, repository.NewLikeRepository)
 	internal.Provide(di, repository.NewMemoryCacheRepository)
 	internal.Provide(di, repository.NewPostRepository)
 	internal.Provide(di, repository.NewSessionRepository)

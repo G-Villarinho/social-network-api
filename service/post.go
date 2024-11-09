@@ -53,6 +53,7 @@ func NewPostService(di *internal.Di) (domain.PostService, error) {
 
 func (p *postService) CreatePost(ctx context.Context, payload domain.PostPayload) error {
 	post := payload.ToPost(p.contextService.GetUserID(ctx))
+
 	if err := p.postRepository.CreatePost(ctx, *post); err != nil {
 		return fmt.Errorf("error to create post: %w", err)
 	}
@@ -61,8 +62,33 @@ func (p *postService) CreatePost(ctx context.Context, payload domain.PostPayload
 }
 
 func (p *postService) GetPosts(ctx context.Context, page int, limit int) (*domain.Pagination[*domain.PostResponse], error) {
+	cachedPosts, err := p.memoryCacheRepository.GetPosts(ctx, p.contextService.GetUserID(ctx), page, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get posts from cache: %w", err)
+	}
 
-	return nil, nil
+	if cachedPosts != nil {
+		return cachedPosts, nil
+	}
+
+	pagedPosts, err := p.postRepository.GetPaginatedPosts(ctx, p.contextService.GetUserID(ctx), page, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get paginated posts: %w", err)
+	}
+
+	if pagedPosts == nil {
+		return nil, domain.ErrPostNotFound
+	}
+
+	pagedPostsResponse := domain.Map(pagedPosts, func(post *domain.Post) *domain.PostResponse {
+		return post.ToPostResponse()
+	})
+
+	if err := p.memoryCacheRepository.SetPost(ctx, p.contextService.GetUserID(ctx), pagedPostsResponse, page, limit); err != nil {
+		return nil, fmt.Errorf("set posts in cache: %w", err)
+	}
+
+	return pagedPostsResponse, nil
 }
 
 func (p *postService) GetPostById(ctx context.Context, ID uuid.UUID) (*domain.PostResponse, error) {
@@ -80,7 +106,10 @@ func (p *postService) GetPostById(ctx context.Context, ID uuid.UUID) (*domain.Po
 		return nil, fmt.Errorf("error to check if user has liked post: %w", err)
 	}
 
-	return post.ToPostResponse(hasLiked), nil
+	postResponse := post.ToPostResponse()
+	postResponse.SetLikesByUser(hasLiked)
+
+	return postResponse, nil
 }
 
 func (p *postService) UpdatePost(ctx context.Context, ID uuid.UUID, payload domain.PostUpdatePayload) error {
@@ -152,7 +181,9 @@ func (p *postService) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*dom
 			likesByUser = true
 		}
 
-		postsResponse = append(postsResponse, post.ToPostResponse(likesByUser))
+		postResponse := post.ToPostResponse()
+		postResponse.SetLikesByUser(likesByUser)
+		postsResponse = append(postsResponse, postResponse)
 	}
 
 	return postsResponse, nil

@@ -126,16 +126,19 @@ func (p *PostPayload) ToPost(userId uuid.UUID) *Post {
 	}
 }
 
-func (p *Post) ToPostResponse(likesByUser bool) *PostResponse {
+func (p *Post) ToPostResponse() *PostResponse {
 	return &PostResponse{
 		ID:             p.ID,
 		AuthorUsername: p.Author.Username,
 		Likes:          p.Likes,
-		LikesByUser:    likesByUser,
 		Title:          p.Title,
 		Content:        p.Content,
 		CreatedAt:      p.CreatedAt,
 	}
+}
+
+func (pr *PostResponse) SetLikesByUser(likesByUser bool) {
+	pr.LikesByUser = likesByUser
 }
 
 func (p *Post) Update(payload PostUpdatePayload) {

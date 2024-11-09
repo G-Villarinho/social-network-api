@@ -1,5 +1,7 @@
 package domain
 
+//go:generate mockery --name=MemoryCacheRepository --dir=. --output=../mocks/ --outpkg=mocks
+
 import (
 	"context"
 

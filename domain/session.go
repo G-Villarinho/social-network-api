@@ -1,5 +1,8 @@
 package domain
 
+//go:generate mockery --name=SessionService --output=../mocks --outpkg=mocks
+//go:generate mockery --name=SessionRepository --output=../mocks --outpkg=mocks
+
 import (
 	"context"
 	"errors"

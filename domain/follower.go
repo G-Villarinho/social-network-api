@@ -10,6 +10,10 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockery --name=FollowerHandler --output=../mocks --outpkg=mocks
+//go:generate mockery --name=FollowerService --output=../mocks --outpkg=mocks
+//go:generate mockery --name=FollowerRepository --output=../mocks --outpkg=mocks
+
 var (
 	ErrUserCannotFollowItself   = errors.New("user cannot follow itself")
 	ErrFollowerNotFound         = errors.New("follower not found")

@@ -1,5 +1,7 @@
 package domain
 
+//go:generate mockery --name=ContextService --output=../mocks --outpkg=mocks
+
 import (
 	"context"
 

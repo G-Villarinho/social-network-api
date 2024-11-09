@@ -11,6 +11,9 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockery --name=UserHandler --output=../mocks --outpkg=mocks
+//go:generate mockery --name=UserService --output=../mocks --outpkg=mocks
+//go:generate mockery --name=UserRepository --output=../mocks --outpkg=mocks
 type statusType string
 
 var (

@@ -1,5 +1,9 @@
 package domain
 
+//go:generate mockery --name=PostHandler --output=../mocks --outpkg=mocks
+//go:generate mockery --name=PostService --output=../mocks --outpkg=mocks
+//go:generate mockery --name=PostRepository --output=../mocks --outpkg=mocks
+
 import (
 	"context"
 	"errors"

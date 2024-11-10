@@ -85,8 +85,11 @@ func (l *likeService) UserLikedPosts(ctx context.Context, userID uuid.UUID, post
 		for _, postID := range likeCache.MissingLikes {
 			liked := missingLikesMap[postID]
 			likesMap[postID] = liked
-			if err := l.memoryCache.SetPostLike(ctx, postID, userID); err != nil {
-				return nil, fmt.Errorf("error setting like in cache: %w", err)
+
+			if liked {
+				if err := l.memoryCache.SetPostLike(ctx, postID, userID); err != nil {
+					return nil, fmt.Errorf("error setting like in cache: %w", err)
+				}
 			}
 		}
 	}

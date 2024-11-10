@@ -1,0 +1,22 @@
+meta {
+  name: Get Feed
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/v1/followers/82743464-bbee-463f-8062-af93b3135e70
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "firstName": "Pablo",
+    "lastName": "Tavares",
+    "email": "pablo@gmail.com",
+    "username":"pablo",
+    "password": "Teste@123",
+    "confirmPassword": "Teste@123"
+  }
+}

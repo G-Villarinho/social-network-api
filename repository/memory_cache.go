@@ -66,6 +66,9 @@ func (m *memoryCacheRepository) GetPosts(ctx context.Context, userID uuid.UUID, 
 
 	JSON, err := m.redisClient.Get(ctx, getPostCacheKey(userID, page, limit)).Result()
 	if err != nil {
+		if err == redis.Nil {
+			return nil, nil
+		}
 		return nil, err
 	}
 

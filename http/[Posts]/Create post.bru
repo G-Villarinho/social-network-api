@@ -1,0 +1,19 @@
+meta {
+  name: Create post
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/v1/posts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "O Impacto da Tecnologia",
+    "content": "A tecnologia está presente em tudo que fazemos, transformando desde a comunicação até o trabalho. Como você acha que as próximas inovações vão impactar o nosso dia a dia? Compartilhe suas ideias!"
+  }
+  
+}

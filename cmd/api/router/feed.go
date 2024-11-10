@@ -5,6 +5,7 @@ import (
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/internal"
+	"github.com/G-Villarinho/social-network/middleware"
 	"github.com/labstack/echo/v4"
 )
 
@@ -14,7 +15,7 @@ func setupFeedRoutes(e *echo.Echo, di *internal.Di) {
 		log.Fatal("error to create user handler: ", err)
 	}
 
-	group := e.Group("/v1/feed")
+	group := e.Group("/v1/feed", middleware.EnsureAuthenticated(di))
 
 	group.GET("", feedHandler.GetFeed)
 }

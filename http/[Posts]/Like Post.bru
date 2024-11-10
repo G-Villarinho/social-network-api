@@ -1,0 +1,19 @@
+meta {
+  name: Like Post
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/v1/posts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "Educação Digital",
+    "content": "Plataformas digitais estão revolucionando a educação e tornando o conhecimento mais acessível. Você acha que o aprendizado online veio para ficar? Quais são suas experiências com cursos e treinamentos digitais?"
+  }
+  
+}

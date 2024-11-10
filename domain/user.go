@@ -187,6 +187,7 @@ func (u *User) ToUserFollowerResponse() *UserFollowerResponse {
 
 func (up *UserPayload) ToUser(passwordHash string) *User {
 	return &User{
+		ID:        uuid.New(),
 		FirstName: up.FirstName,
 		LastName:  up.LastName,
 		Username:  up.Username,
@@ -225,7 +226,6 @@ func (User) TableName() string {
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
-	u.ID = uuid.New()
 	u.CreatedAt = time.Now().UTC()
 	return
 }

@@ -81,6 +81,7 @@ func main() {
 		return rabbitMQClient, nil
 	})
 
+	internal.Provide(di, handler.NewFeedHandler)
 	internal.Provide(di, handler.NewFollowerHandler)
 	internal.Provide(di, handler.NewPostHandler)
 	internal.Provide(di, handler.NewUserHandler)

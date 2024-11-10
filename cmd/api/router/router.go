@@ -9,4 +9,5 @@ func SetupRoutes(e *echo.Echo, di *internal.Di) {
 	setupUserRoutes(e, di)
 	setupFollowerRoutes(e, di)
 	setupPostRoutes(e, di)
+	setupFeedRoutes(e, di)
 }

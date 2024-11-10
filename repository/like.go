@@ -71,3 +71,35 @@ func (l *likeRepository) UserLikedPost(ctx context.Context, ID uuid.UUID, userID
 
 	return true, nil
 }
+
+func (l *likeRepository) UserLikedPosts(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error) {
+	var likes []domain.Like
+	if err := l.db.WithContext(ctx).
+		Where("userID = ? AND postID IN ?", userID, postIDs).
+		Find(&likes).Error; err != nil {
+		return nil, err
+	}
+
+	likedPostIDs := make([]uuid.UUID, len(likes))
+	for i, like := range likes {
+		likedPostIDs[i] = like.PostID
+	}
+
+	return likedPostIDs, nil
+}
+
+func (l *likeRepository) GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]bool, error) {
+	var likes []domain.Like
+	if err := l.db.WithContext(ctx).
+		Where("userID = ?", userID).
+		Find(&likes).Error; err != nil {
+		return nil, err
+	}
+
+	likedPostIDs := make(map[uuid.UUID]bool)
+	for _, like := range likes {
+		likedPostIDs[like.PostID] = true
+	}
+
+	return likedPostIDs, nil
+}

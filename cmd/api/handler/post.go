@@ -3,7 +3,6 @@ package handler
 import (
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/internal"
@@ -57,39 +56,6 @@ func (p *postHandler) CreatePost(ctx echo.Context) error {
 	}
 
 	return ctx.NoContent(http.StatusCreated)
-}
-
-func (p *postHandler) GetPosts(ctx echo.Context) error {
-	log := slog.With(
-		slog.String("handler", "post"),
-		slog.String("func", "GetPosts"),
-	)
-
-	page, err := strconv.Atoi(ctx.QueryParam("page"))
-	if err != nil || page < 1 {
-		page = 1
-	}
-	limit, err := strconv.Atoi(ctx.QueryParam("limit"))
-	if err != nil || limit < 1 {
-		limit = 20
-	}
-
-	response, err := p.postService.GetPosts(ctx.Request().Context(), page, limit)
-	if err != nil {
-		log.Error(err.Error())
-
-		if err == domain.ErrSessionNotFound {
-			return domain.AccessDeniedAPIErrorResponse(ctx)
-		}
-
-		if err == domain.ErrPostNotFound {
-			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusNotFound, nil, "Not Found", "The post does not exist.")
-		}
-
-		return domain.InternalServerAPIErrorResponse(ctx)
-	}
-
-	return ctx.JSON(http.StatusOK, response)
 }
 
 func (p *postHandler) GetPostById(ctx echo.Context) error {

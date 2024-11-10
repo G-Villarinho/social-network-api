@@ -25,11 +25,14 @@ type LikePayload struct {
 
 type LikeService interface {
 	CreateLike(ctx context.Context, payload LikePayload) error
+	UserLikedPosts(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) (map[uuid.UUID]bool, error)
 }
 
 type LikeRepository interface {
 	CreateLike(ctx context.Context, like Like) error
 	UserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
+	UserLikedPosts(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error)
+	GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]bool, error)
 }
 
 func (l *LikePayload) ToLike() *Like {

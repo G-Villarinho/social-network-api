@@ -17,6 +17,7 @@ type postService struct {
 	di                    *internal.Di
 	postRepository        domain.PostRepository
 	contextService        domain.ContextService
+	likeRepository        domain.LikeRepository
 	memoryCacheRepository domain.MemoryCacheRepository
 	queueService          domain.QueueService
 }
@@ -42,12 +43,18 @@ func NewPostService(di *internal.Di) (domain.PostService, error) {
 		return nil, err
 	}
 
+	likeRepository, err := internal.Invoke[domain.LikeRepository](di)
+	if err != nil {
+		return nil, err
+	}
+
 	return &postService{
 		di:                    di,
 		postRepository:        postRepository,
 		contextService:        contextService,
 		memoryCacheRepository: memoryCacheRepository,
 		queueService:          queueService,
+		likeRepository:        likeRepository,
 	}, nil
 }
 
@@ -101,7 +108,7 @@ func (p *postService) GetPostById(ctx context.Context, ID uuid.UUID) (*domain.Po
 		return nil, domain.ErrPostNotFound
 	}
 
-	hasLiked, err := p.postRepository.HasUserLikedPost(ctx, ID, post.AuthorID)
+	hasLiked, err := p.likeRepository.UserLikedPost(ctx, ID, post.AuthorID)
 	if err != nil {
 		return nil, fmt.Errorf("error to check if user has liked post: %w", err)
 	}
@@ -170,7 +177,7 @@ func (p *postService) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*dom
 		return nil, domain.ErrPostNotFound
 	}
 
-	likedPostIDs, err := p.postRepository.GetLikedPostIDs(ctx, session.UserID)
+	likedPostIDs, err := p.likeRepository.GetLikedPostIDs(ctx, session.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -243,32 +250,6 @@ func (p *postService) UnlikePost(ctx context.Context, ID uuid.UUID) error {
 	return nil
 }
 
-func (p *postService) ProcessLikePost(ctx context.Context, payload domain.LikePayload) error {
-	post, err := p.postRepository.GetPostById(ctx, payload.PostID, false)
-	if err != nil {
-		return fmt.Errorf("post by ID: %w", err)
-	}
-
-	if post == nil {
-		return domain.ErrPostNotFound
-	}
-
-	hasLike, err := p.postRepository.HasUserLikedPost(ctx, payload.PostID, payload.UserID)
-	if err != nil {
-		return fmt.Errorf("error to check if user has liked post: %w", err)
-	}
-
-	if hasLike {
-		return domain.ErrPostAlreadyLiked
-	}
-
-	if err := p.postRepository.LikePost(ctx, *payload.ToLike()); err != nil {
-		return fmt.Errorf("error to like post: %w", err)
-	}
-
-	return nil
-}
-
 func (p *postService) ProcessUnlikePost(ctx context.Context, payload domain.LikePayload) error {
 	post, err := p.postRepository.GetPostById(ctx, payload.PostID, false)
 	if err != nil {
@@ -279,7 +260,7 @@ func (p *postService) ProcessUnlikePost(ctx context.Context, payload domain.Like
 		return domain.ErrPostNotFound
 	}
 
-	hasLiked, err := p.postRepository.HasUserLikedPost(ctx, payload.UserID, payload.UserID)
+	hasLiked, err := p.likeRepository.UserLikedPost(ctx, payload.UserID, payload.UserID)
 	if err != nil {
 		return fmt.Errorf("error to check if user has liked post: %w", err)
 	}

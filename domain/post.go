@@ -55,7 +55,6 @@ type PostResponse struct {
 
 type PostHandler interface {
 	CreatePost(ctx echo.Context) error
-	GetPosts(ctx echo.Context) error
 	GetPostById(ctx echo.Context) error
 	UpdatePost(ctx echo.Context) error
 	DeletePost(ctx echo.Context) error
@@ -73,7 +72,6 @@ type PostService interface {
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*PostResponse, error)
 	LikePost(ctx context.Context, ID uuid.UUID) error
 	UnlikePost(ctx context.Context, ID uuid.UUID) error
-	ProcessLikePost(ctx context.Context, payload LikePayload) error
 	ProcessUnlikePost(ctx context.Context, payload LikePayload) error
 }
 
@@ -84,11 +82,7 @@ type PostRepository interface {
 	UpdatePost(ctx context.Context, ID uuid.UUID, post Post) error
 	DeletePost(ctx context.Context, ID uuid.UUID) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*Post, error)
-	LikePost(ctx context.Context, like Like) error
 	UnlikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error
-	HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
-	GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]bool, error)
-	GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error)
 }
 
 func (p *PostPayload) trim() {

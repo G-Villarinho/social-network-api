@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/mocks"
 	"github.com/google/uuid"
@@ -690,7 +691,7 @@ func TestGetByUserID_Success_ReturnsPostsWithoutLikes(t *testing.T) {
 	userID := uuid.New()
 	postID := uuid.New()
 	posts := []*domain.Post{{ID: postID}}
-	likedPostIDs := map[uuid.UUID]bool{} // Nenhum post curtido
+	likedPostIDs := map[uuid.UUID]bool{}
 
 	postRepoMock.On("GetByUserID", ctx, userID).Return(posts, nil)
 	likeRepoMock.On("GetLikedPostIDs", ctx, session.UserID).Return(likedPostIDs, nil)
@@ -703,4 +704,185 @@ func TestGetByUserID_Success_ReturnsPostsWithoutLikes(t *testing.T) {
 	assert.False(t, postsResponse[0].LikesByUser)
 	postRepoMock.AssertExpectations(t)
 	likeRepoMock.AssertExpectations(t)
+}
+
+func TestLikePost_Success(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	done := make(chan bool)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("SetPostLike", ctx, postID, userID).Return(nil)
+	queueServiceMock.On("Publish", config.QueueLikePost, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		done <- true
+	})
+
+	err := postService.LikePost(ctx, postID)
+
+	<-done
+
+	assert.NoError(t, err)
+	cacheMock.AssertExpectations(t)
+	queueServiceMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestLikePost_CacheError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("SetPostLike", ctx, postID, userID).Return(errors.New("cache error"))
+
+	err := postService.LikePost(ctx, postID)
+
+	assert.ErrorContains(t, err, "cache error")
+	cacheMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestLikePost_QueuePublishError_LogError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+	done := make(chan bool)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("SetPostLike", ctx, postID, userID).Return(nil)
+	queueServiceMock.On("Publish", config.QueueLikePost, mock.Anything).Return(errors.New("publish error")).Run(func(args mock.Arguments) {
+		done <- true
+	})
+
+	err := postService.LikePost(ctx, postID)
+
+	<-done
+
+	assert.NoError(t, err)
+	cacheMock.AssertExpectations(t)
+	queueServiceMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestUnlikePost_Success(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	done := make(chan bool)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("RemovePostLike", ctx, postID, userID).Return(nil)
+	queueServiceMock.On("Publish", config.QueueUnlikePost, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		done <- true
+	})
+
+	err := postService.UnlikePost(ctx, postID)
+
+	<-done
+
+	assert.NoError(t, err)
+	cacheMock.AssertExpectations(t)
+	queueServiceMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestUnlikePost_CacheError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("RemovePostLike", ctx, postID, userID).Return(errors.New("cache error"))
+
+	err := postService.UnlikePost(ctx, postID)
+
+	assert.ErrorContains(t, err, "cache error")
+	cacheMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestUnlikePost_QueuePublishError_LogError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	done := make(chan bool)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("RemovePostLike", ctx, postID, userID).Return(nil)
+	queueServiceMock.On("Publish", config.QueueUnlikePost, mock.Anything).Return(errors.New("publish error")).Run(func(args mock.Arguments) {
+		done <- true
+	})
+
+	err := postService.UnlikePost(ctx, postID)
+
+	<-done
+
+	assert.NoError(t, err)
+	cacheMock.AssertExpectations(t)
+	queueServiceMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
 }

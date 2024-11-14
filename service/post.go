@@ -181,6 +181,7 @@ func (p *postService) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*dom
 	if err != nil {
 		return nil, err
 	}
+
 	var postsResponse []*domain.PostResponse
 	for _, post := range posts {
 		likesByUser := false
@@ -246,32 +247,6 @@ func (p *postService) UnlikePost(ctx context.Context, ID uuid.UUID) error {
 			log.Error("error to publish unlike event", slog.String("error", err.Error()))
 		}
 	}()
-
-	return nil
-}
-
-func (p *postService) ProcessUnlikePost(ctx context.Context, payload domain.LikePayload) error {
-	post, err := p.postRepository.GetPostById(ctx, payload.PostID, false)
-	if err != nil {
-		return fmt.Errorf("error to get post by ID: %w", err)
-	}
-
-	if post == nil {
-		return domain.ErrPostNotFound
-	}
-
-	hasLiked, err := p.likeRepository.UserLikedPost(ctx, payload.UserID, payload.UserID)
-	if err != nil {
-		return fmt.Errorf("error to check if user has liked post: %w", err)
-	}
-
-	if !hasLiked {
-		return domain.ErrPostNotLiked
-	}
-
-	if err := p.postRepository.UnlikePost(ctx, payload.PostID, payload.UserID); err != nil {
-		return fmt.Errorf("unlike post: %w", err)
-	}
 
 	return nil
 }

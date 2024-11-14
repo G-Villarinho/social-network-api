@@ -1,5 +1,7 @@
 package client
 
+//go:generate mockery --name=RabbitMQClient --dir=. --output=../mocks/ --outpkg=mocks
+
 import (
 	"fmt"
 

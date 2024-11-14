@@ -1,5 +1,7 @@
 package domain
 
+//go:generate mockery --name=FeedService --output=../mocks --outpkg=mocks
+
 import (
 	"context"
 	"errors"

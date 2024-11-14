@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestGetPosts_SuccessFromCache(t *testing.T) {
+func TestGetPosts_WhenSuccessFromCache_ShouldReturnPosts(t *testing.T) {
 	ctx := context.Background()
 	cacheMock := new(mocks.MemoryCacheRepository)
 	postRepoMock := new(mocks.PostRepository)
@@ -40,7 +40,7 @@ func TestGetPosts_SuccessFromCache(t *testing.T) {
 	contextServiceMock.AssertExpectations(t)
 }
 
-func TestGetPosts_CacheError_ReturnsError(t *testing.T) {
+func TestGetPosts_WhenCacheError_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	cacheMock := new(mocks.MemoryCacheRepository)
 	postRepoMock := new(mocks.PostRepository)
@@ -67,7 +67,7 @@ func TestGetPosts_CacheError_ReturnsError(t *testing.T) {
 	contextServiceMock.AssertExpectations(t)
 }
 
-func TestGetPosts_SuccessFromRepositoryAndSetCache(t *testing.T) {
+func TestGetPosts_WhenSuccessFromRepositoryAndSetCache_ShouldReturnPosts(t *testing.T) {
 	ctx := context.Background()
 	cacheMock := new(mocks.MemoryCacheRepository)
 	postRepoMock := new(mocks.PostRepository)
@@ -97,7 +97,7 @@ func TestGetPosts_SuccessFromRepositoryAndSetCache(t *testing.T) {
 	contextServiceMock.AssertExpectations(t)
 }
 
-func TestGetPosts_RepositoryError_ReturnsError(t *testing.T) {
+func TestGetPosts_WhenRepositoryError_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	cacheMock := new(mocks.MemoryCacheRepository)
 	postRepoMock := new(mocks.PostRepository)
@@ -126,7 +126,7 @@ func TestGetPosts_RepositoryError_ReturnsError(t *testing.T) {
 	contextServiceMock.AssertExpectations(t)
 }
 
-func TestGetPosts_NoPostsFound_ReturnsErrPostNotFound(t *testing.T) {
+func TestGetPosts_WhenNoPostsFound_ShouldReturnErrPostNotFound(t *testing.T) {
 	ctx := context.Background()
 	cacheMock := new(mocks.MemoryCacheRepository)
 	postRepoMock := new(mocks.PostRepository)
@@ -155,7 +155,7 @@ func TestGetPosts_NoPostsFound_ReturnsErrPostNotFound(t *testing.T) {
 	contextServiceMock.AssertExpectations(t)
 }
 
-func TestGetPosts_SetCacheError_ReturnsError(t *testing.T) {
+func TestGetPosts_WhenSetCacheError_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	cacheMock := new(mocks.MemoryCacheRepository)
 	postRepoMock := new(mocks.PostRepository)

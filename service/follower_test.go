@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestFollowUser_Success(t *testing.T) {
+func TestFollowUser_WhenSuccessful_ShouldFollowUser(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -37,7 +37,7 @@ func TestFollowUser_Success(t *testing.T) {
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestFollowUser_UserCannotFollowItself_ReturnsError(t *testing.T) {
+func TestFollowUser_WhenUserFollowsItself_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -55,7 +55,7 @@ func TestFollowUser_UserCannotFollowItself_ReturnsError(t *testing.T) {
 	assert.Equal(t, domain.ErrUserCannotFollowItself, err)
 }
 
-func TestFollowUser_UserNotFound_ReturnsError(t *testing.T) {
+func TestFollowUser_WhenUserNotFound_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -77,7 +77,7 @@ func TestFollowUser_UserNotFound_ReturnsError(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestFollowUser_SessionNotFound_ReturnsError(t *testing.T) {
+func TestFollowUser_WhenSessionNotFound_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -94,7 +94,7 @@ func TestFollowUser_SessionNotFound_ReturnsError(t *testing.T) {
 	assert.Equal(t, domain.ErrSessionNotFound, err)
 }
 
-func TestFollowUser_FollowerAlreadyExists_ReturnsError(t *testing.T) {
+func TestFollowUser_WhenFollowerAlreadyExists_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -118,7 +118,7 @@ func TestFollowUser_FollowerAlreadyExists_ReturnsError(t *testing.T) {
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestFollowUser_CreateFollowerFails_ReturnsError(t *testing.T) {
+func TestFollowUser_WhenCreateFollowerFails_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -144,7 +144,7 @@ func TestFollowUser_CreateFollowerFails_ReturnsError(t *testing.T) {
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestUnfollowUser_SessionNotFound_ReturnsError(t *testing.T) {
+func TestUnfollowUser_WhenSessionNotFound_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -161,7 +161,7 @@ func TestUnfollowUser_SessionNotFound_ReturnsError(t *testing.T) {
 	assert.Equal(t, domain.ErrSessionNotFound, err)
 }
 
-func TestUnfollowUser_UserCannotUnfollowItself_ReturnsError(t *testing.T) {
+func TestUnfollowUser_WhenUserUnfollowsItself_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -179,7 +179,7 @@ func TestUnfollowUser_UserCannotUnfollowItself_ReturnsError(t *testing.T) {
 	assert.Equal(t, domain.ErrUserCannotUnfollowItself, err)
 }
 
-func TestUnfollowUser_UserNotFound_ReturnsError(t *testing.T) {
+func TestUnfollowUser_WhenUserNotFound_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -201,7 +201,7 @@ func TestUnfollowUser_UserNotFound_ReturnsError(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestUnfollowUser_FollowerNotFound_ReturnsErrorFollowingNotFound(t *testing.T) {
+func TestUnfollowUser_WhenFollowerNotFound_ShouldReturnErrorFollowingNotFound(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -225,7 +225,7 @@ func TestUnfollowUser_FollowerNotFound_ReturnsErrorFollowingNotFound(t *testing.
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestUnfollowUser_DeleteFollowerFails_ReturnsError(t *testing.T) {
+func TestUnfollowUser_WhenDeleteFollowerFails_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -251,7 +251,7 @@ func TestUnfollowUser_DeleteFollowerFails_ReturnsError(t *testing.T) {
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestUnfollowUser_Success(t *testing.T) {
+func TestUnfollowUser_WhenSuccessful_ShouldUnfollowUser(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	followerRepoMock := new(mocks.FollowerRepository)
@@ -276,7 +276,7 @@ func TestUnfollowUser_Success(t *testing.T) {
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestGetFollowers_SessionNotFound_ReturnsError(t *testing.T) {
+func TestGetFollowers_WhenSessionNotFound_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	followerRepoMock := new(mocks.FollowerRepository)
 
@@ -290,7 +290,7 @@ func TestGetFollowers_SessionNotFound_ReturnsError(t *testing.T) {
 	assert.Nil(t, followers)
 }
 
-func TestGetFollowers_RepositoryError_ReturnsError(t *testing.T) {
+func TestGetFollowers_WhenRepositoryFails_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	followerRepoMock := new(mocks.FollowerRepository)
 
@@ -311,7 +311,7 @@ func TestGetFollowers_RepositoryError_ReturnsError(t *testing.T) {
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestGetFollowers_NoFollowersFound_ReturnsErrorFollowerNotFound(t *testing.T) {
+func TestGetFollowers_WhenNoFollowersFound_ShouldReturnErrorFollowerNotFound(t *testing.T) {
 	ctx := context.Background()
 	followerRepoMock := new(mocks.FollowerRepository)
 
@@ -331,7 +331,7 @@ func TestGetFollowers_NoFollowersFound_ReturnsErrorFollowerNotFound(t *testing.T
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestGetFollowers_Success_ReturnsFollowersResponse(t *testing.T) {
+func TestGetFollowers_WhenSuccessful_ShouldReturnFollowersResponse(t *testing.T) {
 	ctx := context.Background()
 	followerRepoMock := new(mocks.FollowerRepository)
 
@@ -360,7 +360,7 @@ func TestGetFollowers_Success_ReturnsFollowersResponse(t *testing.T) {
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestGetFollowings_SessionNotFound_ReturnsError(t *testing.T) {
+func TestGetFollowings_WhenSessionNotFound_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	followerRepoMock := new(mocks.FollowerRepository)
 
@@ -374,7 +374,7 @@ func TestGetFollowings_SessionNotFound_ReturnsError(t *testing.T) {
 	assert.Nil(t, following)
 }
 
-func TestGetFollowings_RepositoryError_ReturnsError(t *testing.T) {
+func TestGetFollowings_WhenRepositoryFails_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	followerRepoMock := new(mocks.FollowerRepository)
 
@@ -395,7 +395,7 @@ func TestGetFollowings_RepositoryError_ReturnsError(t *testing.T) {
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestGetFollowings_NoFollowingFound_ReturnsErrorFollowingNotFound(t *testing.T) {
+func TestGetFollowings_WhenNoFollowingFound_ShouldReturnErrorFollowingNotFound(t *testing.T) {
 	ctx := context.Background()
 	followerRepoMock := new(mocks.FollowerRepository)
 
@@ -415,7 +415,7 @@ func TestGetFollowings_NoFollowingFound_ReturnsErrorFollowingNotFound(t *testing
 	followerRepoMock.AssertExpectations(t)
 }
 
-func TestGetFollowings_Success_ReturnsFollowingResponse(t *testing.T) {
+func TestGetFollowings_WhenSuccessful_ShouldReturnFollowingResponse(t *testing.T) {
 	ctx := context.Background()
 	followerRepoMock := new(mocks.FollowerRepository)
 

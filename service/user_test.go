@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestCreateUser_UserAlreadyExists_ReturnsErrorAlreadyRegister(t *testing.T) {
+func TestCreateUser_WhenUserAlreadyExists_ShouldReturnErrorAlreadyRegister(t *testing.T) {
 	ctx := context.Background()
 
 	userRepoMock := new(mocks.UserRepository)
@@ -44,7 +44,7 @@ func TestCreateUser_UserAlreadyExists_ReturnsErrorAlreadyRegister(t *testing.T) 
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestCreateUser_GetUserByUsernameOrEmailRepositoryFails_ReturnsError(t *testing.T) {
+func TestCreateUser_WhenGetUserByUsernameOrEmailFails_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -74,7 +74,7 @@ func TestCreateUser_GetUserByUsernameOrEmailRepositoryFails_ReturnsError(t *test
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestCreateUser_CreateUserRepositoryFails_ReturnsError(t *testing.T) {
+func TestCreateUser_WhenCreateUserRepositoryFails_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -105,7 +105,7 @@ func TestCreateUser_CreateUserRepositoryFails_ReturnsError(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestCreateUser_UsernameAlreadyExists_ReturnsErrorUsernameAlreadyExists(t *testing.T) {
+func TestCreateUser_WhenUsernameAlreadyExists_ShouldReturnErrorUsernameAlreadyExists(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -139,7 +139,7 @@ func TestCreateUser_UsernameAlreadyExists_ReturnsErrorUsernameAlreadyExists(t *t
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestCreateUser_HashPasswordFails_ReturnsError(t *testing.T) {
+func TestCreateUser_WhenHashPasswordFails_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -170,7 +170,7 @@ func TestCreateUser_HashPasswordFails_ReturnsError(t *testing.T) {
 	userRepoMock.AssertNotCalled(t, "CreateUser", ctx, mock.Anything)
 }
 
-func TestSignIn_UserNotFound_ReturnsErrorUserNotFound(t *testing.T) {
+func TestSignIn_WhenUserNotFound_ShouldReturnErrorUserNotFound(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -196,7 +196,7 @@ func TestSignIn_UserNotFound_ReturnsErrorUserNotFound(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestSignIn_InvalidPassword_ReturnsErrorInvalidPassword(t *testing.T) {
+func TestSignIn_WhenInvalidPassword_ShouldReturnErrorInvalidPassword(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -229,7 +229,7 @@ func TestSignIn_InvalidPassword_ReturnsErrorInvalidPassword(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestSignIn_Success_ReturnsToken(t *testing.T) {
+func TestSignIn_WhenSuccessful_ShouldReturnToken(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -263,7 +263,7 @@ func TestSignIn_Success_ReturnsToken(t *testing.T) {
 	sessionServiceMock.AssertExpectations(t)
 }
 
-func TestSignOut_SessionNotFound_ReturnsErrorSessionNotFound(t *testing.T) {
+func TestSignOut_WhenSessionNotFound_ShouldReturnErrorSessionNotFound(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -280,7 +280,7 @@ func TestSignOut_SessionNotFound_ReturnsErrorSessionNotFound(t *testing.T) {
 	assert.Equal(t, domain.ErrSessionNotFound, err)
 }
 
-func TestSignOut_Success(t *testing.T) {
+func TestSignOut_WhenSuccessful_ShouldCompleteWithoutError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -302,7 +302,7 @@ func TestSignOut_Success(t *testing.T) {
 	sessionServiceMock.AssertExpectations(t)
 }
 
-func TestGetUser_SessionNotFound_ReturnsErrorSessionNotFound(t *testing.T) {
+func TestGetUser_WhenSessionNotFound_ShouldReturnErrorSessionNotFound(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -320,7 +320,7 @@ func TestGetUser_SessionNotFound_ReturnsErrorSessionNotFound(t *testing.T) {
 	assert.Nil(t, user)
 }
 
-func TestGetUser_UserNotFound_ReturnsErrorUserNotFound(t *testing.T) {
+func TestGetUser_WhenUserNotFound_ShouldReturnErrorUserNotFound(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -343,7 +343,7 @@ func TestGetUser_UserNotFound_ReturnsErrorUserNotFound(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestGetUser_Success_ReturnsUser(t *testing.T) {
+func TestGetUser_WhenSuccessful_ShouldReturnUser(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -376,7 +376,7 @@ func TestGetUser_Success_ReturnsUser(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestUpdateUser_SessionNotFound_ReturnsErrorSessionNotFound(t *testing.T) {
+func TestUpdateUser_WhenSessionNotFound_ShouldReturnErrorSessionNotFound(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -397,7 +397,7 @@ func TestUpdateUser_SessionNotFound_ReturnsErrorSessionNotFound(t *testing.T) {
 	assert.Equal(t, domain.ErrSessionNotFound, err)
 }
 
-func TestUpdateUser_UsernameAlreadyExists_ReturnsErrorUsernameAlreadyExists(t *testing.T) {
+func TestUpdateUser_WhenUsernameAlreadyExists_ShouldReturnErrorUsernameAlreadyExists(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -427,7 +427,7 @@ func TestUpdateUser_UsernameAlreadyExists_ReturnsErrorUsernameAlreadyExists(t *t
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestUpdateUser_UserNotFound_ReturnsErrorUserNotFound(t *testing.T) {
+func TestUpdateUser_WhenUserNotFound_ShouldReturnErrorUserNotFound(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -454,7 +454,7 @@ func TestUpdateUser_UserNotFound_ReturnsErrorUserNotFound(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestUpdateUser_Success(t *testing.T) {
+func TestUpdateUser_WhenSuccessful_ShouldUpdateUser(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -487,7 +487,7 @@ func TestUpdateUser_Success(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestDeleteUser_UserNotFound_ReturnsErrorUserNotFound(t *testing.T) {
+func TestDeleteUser_WhenUserNotFound_ShouldReturnErrorUserNotFound(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -509,7 +509,7 @@ func TestDeleteUser_UserNotFound_ReturnsErrorUserNotFound(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestDeleteUser_Success(t *testing.T) {
+func TestDeleteUser_WhenSuccessful_ShouldCompleteWithoutError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -533,7 +533,7 @@ func TestDeleteUser_Success(t *testing.T) {
 	sessionServiceMock.AssertExpectations(t)
 }
 
-func TestCheckUsername_UsernameExists_ReturnsSuggestions(t *testing.T) {
+func TestCheckUsername_WhenUsernameExists_ShouldReturnSuggestions(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)
@@ -558,7 +558,7 @@ func TestCheckUsername_UsernameExists_ReturnsSuggestions(t *testing.T) {
 	userRepoMock.AssertExpectations(t)
 }
 
-func TestCheckUsername_UsernameAvailable_NoError(t *testing.T) {
+func TestCheckUsername_WhenUsernameAvailable_ShouldCompleteWithoutError(t *testing.T) {
 	ctx := context.Background()
 	userRepoMock := new(mocks.UserRepository)
 	sessionServiceMock := new(mocks.SessionService)

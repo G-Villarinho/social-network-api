@@ -42,7 +42,7 @@ func (f *feedHandler) GetFeed(ctx echo.Context) error {
 		limit = 10
 	}
 
-	response, err := f.feedService.GenerateFeed(ctx.Request().Context(), page, limit)
+	response, err := f.feedService.GetFeed(ctx.Request().Context(), page, limit)
 	if err != nil {
 		log.Error(err.Error())
 

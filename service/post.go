@@ -62,7 +62,7 @@ func (p *postService) CreatePost(ctx context.Context, payload domain.PostPayload
 	post := payload.ToPost(p.contextService.GetUserID(ctx))
 
 	if err := p.postRepository.CreatePost(ctx, *post); err != nil {
-		return fmt.Errorf("error to create post: %w", err)
+		return fmt.Errorf("create post: %w", err)
 	}
 
 	return nil
@@ -101,7 +101,7 @@ func (p *postService) GetPosts(ctx context.Context, page int, limit int) (*domai
 func (p *postService) GetPostById(ctx context.Context, ID uuid.UUID) (*domain.PostResponse, error) {
 	post, err := p.postRepository.GetPostById(ctx, ID, true)
 	if err != nil {
-		return nil, fmt.Errorf("error to get post by ID: %w", err)
+		return nil, fmt.Errorf("get post by ID: %w", err)
 	}
 
 	if post == nil {

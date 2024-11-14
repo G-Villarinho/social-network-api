@@ -65,14 +65,21 @@ func main() {
 	internal.Provide(di, service.NewPostService)
 	internal.Provide(di, service.NewQueueService)
 	internal.Provide(di, service.NewSessionService)
+	internal.Provide(di, service.NewLikeService)
 
 	internal.Provide(di, repository.NewMemoryCacheRepository)
 	internal.Provide(di, repository.NewPostRepository)
 	internal.Provide(di, repository.NewSessionRepository)
+	internal.Provide(di, repository.NewLikeRepository)
 
 	postService, err := internal.Invoke[domain.PostService](di)
 	if err != nil {
 		log.Fatal("error to create post service: ", err)
+	}
+
+	likeService, err := internal.Invoke[domain.LikeService](di)
+	if err != nil {
+		log.Fatal("error to create like service: ", err)
 	}
 
 	queueService, err := internal.Invoke[domain.QueueService](di)
@@ -93,7 +100,18 @@ func main() {
 				continue
 			}
 
-			if err := postService.ProcessUnlikePost(context.Background(), payload); err != nil {
+			post, err := postService.GetPostById(context.Background(), payload.PostID)
+			if err != nil {
+				log.Println("error getting post by ID: ", err)
+				continue
+			}
+
+			if post == nil {
+				log.Printf("post not found: %s", payload.PostID)
+				continue
+			}
+
+			if err := likeService.DeleteLike(context.Background(), payload); err != nil {
 				log.Println("error processing like post: ", err)
 			}
 

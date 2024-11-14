@@ -16,5 +16,5 @@ type FeedHandler interface {
 }
 
 type FeedService interface {
-	GenerateFeed(ctx context.Context, page, limit int) (*Pagination[*PostResponse], error)
+	GetFeed(ctx context.Context, page, limit int) (*Pagination[*PostResponse], error)
 }

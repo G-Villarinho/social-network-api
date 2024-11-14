@@ -96,3 +96,22 @@ func (l *likeService) UserLikedPosts(ctx context.Context, userID uuid.UUID, post
 
 	return likesMap, nil
 }
+
+func (l *likeService) DeleteLike(ctx context.Context, payload domain.LikePayload) error {
+	userLiked, err := l.likeRepository.UserLikedPost(ctx, payload.PostID, payload.UserID)
+	if err != nil {
+		return fmt.Errorf("check if user liked post: %w", err)
+	}
+
+	if !userLiked {
+		return domain.ErrPostNotLiked
+	}
+
+	like := payload.ToLike()
+
+	if err := l.likeRepository.DeleteLike(ctx, *like); err != nil {
+		return err
+	}
+
+	return nil
+}

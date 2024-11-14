@@ -103,3 +103,24 @@ func (l *likeRepository) GetLikedPostIDs(ctx context.Context, userID uuid.UUID) 
 
 	return likedPostIDs, nil
 }
+
+func (l *likeRepository) DeleteLike(ctx context.Context, like domain.Like) error {
+	tx := l.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	if err := tx.Delete(&like).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Model(&domain.Post{}).
+		Where("id = ?", like.PostID).
+		Updates(map[string]interface{}{"likes": gorm.Expr("likes - ?", 1)}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}

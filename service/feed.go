@@ -40,7 +40,7 @@ func NewFeedService(di *internal.Di) (domain.FeedService, error) {
 	}, nil
 }
 
-func (f *feedService) GenerateFeed(ctx context.Context, page int, limit int) (*domain.Pagination[*domain.PostResponse], error) {
+func (f *feedService) GetFeed(ctx context.Context, page int, limit int) (*domain.Pagination[*domain.PostResponse], error) {
 	paginatedPosts, err := f.postService.GetPosts(ctx, page, limit)
 	if err != nil {
 		return nil, fmt.Errorf("get posts: %w", err)

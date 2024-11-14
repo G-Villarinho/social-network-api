@@ -72,7 +72,6 @@ type PostService interface {
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*PostResponse, error)
 	LikePost(ctx context.Context, ID uuid.UUID) error
 	UnlikePost(ctx context.Context, ID uuid.UUID) error
-	ProcessUnlikePost(ctx context.Context, payload LikePayload) error
 }
 
 type PostRepository interface {

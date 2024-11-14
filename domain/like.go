@@ -8,6 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockery --name=LikeService --output=../mocks --outpkg=mocks
+//go:generate mockery --name=LikeRepository --output=../mocks --outpkg=mocks
+
 type Like struct {
 	ID        uuid.UUID `gorm:"column:id;type:char(36);primaryKey"`
 	UserID    uuid.UUID `gorm:"column:userID;type:char(36);not null"`

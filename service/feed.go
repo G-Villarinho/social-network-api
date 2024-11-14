@@ -55,13 +55,13 @@ func (f *feedService) GetFeed(ctx context.Context, page int, limit int) (*domain
 		postIDs[i] = post.ID
 	}
 
-	likesMap, err := f.likeService.UserLikedPosts(ctx, f.contextService.GetUserID(ctx), postIDs)
+	likes, err := f.likeService.UserLikedPosts(ctx, f.contextService.GetUserID(ctx), postIDs)
 	if err != nil {
 		return nil, fmt.Errorf("fetch user liked posts: %w", err)
 	}
 
 	for i, post := range paginatedPosts.Rows {
-		liked, ok := likesMap[post.ID]
+		liked, ok := likes[post.ID]
 		if ok {
 			paginatedPosts.Rows[i].SetLikesByUser(liked)
 		}

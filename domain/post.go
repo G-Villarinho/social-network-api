@@ -33,16 +33,6 @@ type Post struct {
 	UpdatedAt time.Time `gorm:"column:updatedAt;default:null"`
 }
 
-type Like struct {
-	ID        uuid.UUID `gorm:"column:id;type:char(36);primaryKey"`
-	UserID    uuid.UUID `gorm:"column:userID;type:char(36);not null"`
-	PostID    uuid.UUID `gorm:"column:postID;type:char(36);not null"`
-	Post      Post      `gorm:"foreignKey:PostID;constraint:OnDelete:CASCADE"`
-	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	CreatedAt time.Time `gorm:"column:createdAt;not null"`
-	UpdatedAt time.Time `gorm:"column:updatedAt;default:null"`
-}
-
 type PostPayload struct {
 	Title   string `json:"title" validate:"required,max=50"`
 	Content string `json:"content" validate:"required,max=255"`
@@ -51,11 +41,6 @@ type PostPayload struct {
 type PostUpdatePayload struct {
 	Title   string `json:"title" validate:"omitempty,max=50"`
 	Content string `json:"content" validate:"omitempty,max=255"`
-}
-
-type LikePayload struct {
-	UserID uuid.UUID `json:"userId"`
-	PostID uuid.UUID `json:"postId"`
 }
 
 type PostResponse struct {
@@ -70,7 +55,6 @@ type PostResponse struct {
 
 type PostHandler interface {
 	CreatePost(ctx echo.Context) error
-	GetPosts(ctx echo.Context) error
 	GetPostById(ctx echo.Context) error
 	UpdatePost(ctx echo.Context) error
 	DeletePost(ctx echo.Context) error
@@ -88,8 +72,6 @@ type PostService interface {
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*PostResponse, error)
 	LikePost(ctx context.Context, ID uuid.UUID) error
 	UnlikePost(ctx context.Context, ID uuid.UUID) error
-	ProcessLikePost(ctx context.Context, payload LikePayload) error
-	ProcessUnlikePost(ctx context.Context, payload LikePayload) error
 }
 
 type PostRepository interface {
@@ -99,15 +81,7 @@ type PostRepository interface {
 	UpdatePost(ctx context.Context, ID uuid.UUID, post Post) error
 	DeletePost(ctx context.Context, ID uuid.UUID) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*Post, error)
-	LikePost(ctx context.Context, like Like) error
 	UnlikePost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) error
-	HasUserLikedPost(ctx context.Context, ID uuid.UUID, userID uuid.UUID) (bool, error)
-	GetLikedPostIDs(ctx context.Context, userID uuid.UUID) (map[uuid.UUID]bool, error)
-	GetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, error)
-}
-
-type LikeQueueService interface {
-	AddLike(ctx context.Context, payload LikePayload)
 }
 
 func (p *PostPayload) trim() {
@@ -145,23 +119,19 @@ func (p *PostPayload) ToPost(userId uuid.UUID) *Post {
 	}
 }
 
-func (p *Post) ToPostResponse(likesByUser bool) *PostResponse {
+func (p *Post) ToPostResponse() *PostResponse {
 	return &PostResponse{
 		ID:             p.ID,
 		AuthorUsername: p.Author.Username,
 		Likes:          p.Likes,
-		LikesByUser:    likesByUser,
 		Title:          p.Title,
 		Content:        p.Content,
 		CreatedAt:      p.CreatedAt,
 	}
 }
 
-func (l *LikePayload) ToLike() *Like {
-	return &Like{
-		UserID: l.UserID,
-		PostID: l.PostID,
-	}
+func (pr *PostResponse) SetLikesByUser(likesByUser bool) {
+	pr.LikesByUser = likesByUser
 }
 
 func (p *Post) Update(payload PostUpdatePayload) {
@@ -186,20 +156,5 @@ func (p *Post) BeforeCreate(tx *gorm.DB) (err error) {
 
 func (p *Post) BeforeUpdate(tx *gorm.DB) (err error) {
 	p.UpdatedAt = time.Now().UTC()
-	return
-}
-
-func (Like) TableName() string {
-	return "Like"
-}
-
-func (l *Like) BeforeCreate(tx *gorm.DB) (err error) {
-	l.ID = uuid.New()
-	l.CreatedAt = time.Now().UTC()
-	return
-}
-
-func (l *Like) BeforeUpdate(tx *gorm.DB) (err error) {
-	l.UpdatedAt = time.Now().UTC()
 	return
 }

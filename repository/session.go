@@ -7,26 +7,27 @@ import (
 
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/go-redis/redis/v8"
+
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 	"gorm.io/gorm"
 )
 
 type sessionRepository struct {
-	di          *pkg.Di
+	di          *internal.Di
 	db          *gorm.DB
 	redisClient *redis.Client
 }
 
-func NewSessionRepository(di *pkg.Di) (domain.SessionRepository, error) {
-	db, err := pkg.Invoke[*gorm.DB](di)
+func NewSessionRepository(di *internal.Di) (domain.SessionRepository, error) {
+	db, err := internal.Invoke[*gorm.DB](di)
 	if err != nil {
 		return nil, err
 	}
 
-	redisClient, err := pkg.Invoke[*redis.Client](di)
+	redisClient, err := internal.Invoke[*redis.Client](di)
 	if err != nil {
 		return nil, err
 	}

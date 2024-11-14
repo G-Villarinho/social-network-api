@@ -5,23 +5,24 @@ import (
 	"fmt"
 
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
+
 	"github.com/google/uuid"
 )
 
 type followerService struct {
-	di                 *pkg.Di
+	di                 *internal.Di
 	followerRepository domain.FollowerRepository
 	userRepository     domain.UserRepository
 }
 
-func NewFollowerService(di *pkg.Di) (domain.FollowerService, error) {
-	followerRepository, err := pkg.Invoke[domain.FollowerRepository](di)
+func NewFollowerService(di *internal.Di) (domain.FollowerService, error) {
+	followerRepository, err := internal.Invoke[domain.FollowerRepository](di)
 	if err != nil {
 		return nil, err
 	}
 
-	userRepository, err := pkg.Invoke[domain.UserRepository](di)
+	userRepository, err := internal.Invoke[domain.UserRepository](di)
 	if err != nil {
 		return nil, err
 	}

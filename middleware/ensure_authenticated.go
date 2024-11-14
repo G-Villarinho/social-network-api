@@ -6,14 +6,14 @@ import (
 	"net/http"
 
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/labstack/echo/v4"
 )
 
-func EnsureAuthenticated(di *pkg.Di) echo.MiddlewareFunc {
+func EnsureAuthenticated(di *internal.Di) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
-			sessionService, err := pkg.Invoke[domain.SessionService](di)
+			sessionService, err := internal.Invoke[domain.SessionService](di)
 			if err != nil {
 				slog.Error(err.Error())
 				return domain.InternalServerAPIErrorResponse(ctx)

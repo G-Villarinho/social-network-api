@@ -3,10 +3,9 @@ package service
 import (
 	"context"
 	"errors"
-	"sort"
 	"testing"
-	"time"
 
+	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/mocks"
 	"github.com/google/uuid"
@@ -14,252 +13,876 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestCreatePost_Success(t *testing.T) {
+func TestGetPosts_WhenSuccessFromCache_ShouldReturnPosts(t *testing.T) {
 	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
 	postRepoMock := new(mocks.PostRepository)
 	contextServiceMock := new(mocks.ContextService)
 
 	postService := &postService{
-		postRepository: postRepoMock,
-		contextService: contextServiceMock,
+		memoryCacheRepository: cacheMock,
+		postRepository:        postRepoMock,
+		contextService:        contextServiceMock,
 	}
 
 	userID := uuid.New()
-	payload := domain.PostPayload{
-		Content: "This is a test post",
-	}
+	page, limit := 1, 10
+	cachedPosts := &domain.Pagination[*domain.PostResponse]{}
 
 	contextServiceMock.On("GetUserID", ctx).Return(userID)
-	postRepoMock.On("CreatePost", ctx, mock.AnythingOfType("domain.Post")).Return(nil)
+	cacheMock.On("GetPosts", ctx, userID, page, limit).Return(cachedPosts, nil)
 
-	err := postService.CreatePost(ctx, payload)
+	result, err := postService.GetPosts(ctx, page, limit)
 
 	assert.NoError(t, err)
-	postRepoMock.AssertExpectations(t)
+	assert.Equal(t, cachedPosts, result)
+	cacheMock.AssertExpectations(t)
 	contextServiceMock.AssertExpectations(t)
 }
 
-func TestCreatePost_CreatePostError_ReturnsError(t *testing.T) {
+func TestGetPosts_WhenCacheError_ShouldReturnError(t *testing.T) {
 	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
 	postRepoMock := new(mocks.PostRepository)
 	contextServiceMock := new(mocks.ContextService)
 
 	postService := &postService{
-		postRepository: postRepoMock,
-		contextService: contextServiceMock,
+		memoryCacheRepository: cacheMock,
+		postRepository:        postRepoMock,
+		contextService:        contextServiceMock,
 	}
 
 	userID := uuid.New()
-	payload := domain.PostPayload{
-		Content: "This is a test post",
-	}
+	page, limit := 1, 10
 
 	contextServiceMock.On("GetUserID", ctx).Return(userID)
-	postRepoMock.On("CreatePost", ctx, mock.AnythingOfType("domain.Post")).Return(errors.New("error creating post"))
+	cacheMock.On("GetPosts", ctx, userID, page, limit).Return(nil, errors.New("cache error"))
 
-	err := postService.CreatePost(ctx, payload)
+	result, err := postService.GetPosts(ctx, page, limit)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "error to create post")
-	postRepoMock.AssertExpectations(t)
-	contextServiceMock.AssertExpectations(t)
-}
-
-func TestGetPosts_CacheHit_ReturnsCachedFeed(t *testing.T) {
-	ctx := context.Background()
-	postRepoMock := new(mocks.PostRepository)
-	contextServiceMock := new(mocks.ContextService)
-	memoryCacheRepoMock := new(mocks.MemoryCacheRepository)
-
-	postService := &postService{
-		postRepository:        postRepoMock,
-		contextService:        contextServiceMock,
-		memoryCacheRepository: memoryCacheRepoMock,
-	}
-
-	userID := uuid.New()
-	cachedFeed := &domain.Pagination[*domain.PostResponse]{Page: 1, Limit: 10}
-
-	contextServiceMock.On("GetUserID", ctx).Return(userID)
-	memoryCacheRepoMock.On("GetPosts", ctx, userID, 1, 10).Return(cachedFeed, nil)
-
-	result, err := postService.GetPosts(ctx, 1, 10)
-
-	assert.NoError(t, err)
-	assert.Equal(t, cachedFeed, result)
-	memoryCacheRepoMock.AssertExpectations(t)
-	contextServiceMock.AssertExpectations(t)
-}
-
-func sortUUIDs(uuids []uuid.UUID) {
-	sort.Slice(uuids, func(i, j int) bool {
-		return uuids[i].String() < uuids[j].String()
-	})
-}
-
-func TestGetPosts_CacheMiss_ReturnsRepositoryFeed(t *testing.T) {
-	ctx := context.Background()
-	postRepoMock := new(mocks.PostRepository)
-	contextServiceMock := new(mocks.ContextService)
-	memoryCacheRepoMock := new(mocks.MemoryCacheRepository)
-
-	postService := &postService{
-		postRepository:        postRepoMock,
-		contextService:        contextServiceMock,
-		memoryCacheRepository: memoryCacheRepoMock,
-	}
-
-	userID := uuid.New()
-	repoFeed := &domain.Pagination[*domain.Post]{
-		Page:  1,
-		Limit: 3,
-		Rows: []*domain.Post{
-			{
-				ID:        uuid.New(),
-				AuthorID:  uuid.New(),
-				Author:    domain.User{Username: "test_author_1"},
-				Likes:     5,
-				Title:     "Test Post 1",
-				Content:   "This is the content of test post 1.",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			},
-			{
-				ID:        uuid.New(),
-				AuthorID:  uuid.New(),
-				Author:    domain.User{Username: "test_author_2"},
-				Likes:     8,
-				Title:     "Test Post 2",
-				Content:   "This is the content of test post 2.",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			},
-			{
-				ID:        uuid.New(),
-				AuthorID:  uuid.New(),
-				Author:    domain.User{Username: "test_author_3"},
-				Likes:     3,
-				Title:     "Test Post 3",
-				Content:   "This is the content of test post 3.",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			},
-		},
-		TotalRows:  30,
-		TotalPages: 10,
-	}
-
-	repoFeedResponse := domain.Map(repoFeed, func(post *domain.Post) *domain.PostResponse {
-		return post.ToPostResponse(false)
-	})
-
-	contextServiceMock.On("GetUserID", ctx).Return(userID)
-	memoryCacheRepoMock.On("GetPosts", ctx, userID, 1, 10).Return(nil, nil)
-	postRepoMock.On("GetPaginatedPosts", ctx, userID, 1, 10).Return(repoFeed, nil)
-
-	missingPostIDs := []uuid.UUID{repoFeed.Rows[0].ID, repoFeed.Rows[1].ID, repoFeed.Rows[2].ID}
-	likedPostIDs := []uuid.UUID{}
-
-	memoryCacheRepoMock.On("GetCachedAndMissingLikes", ctx, userID, mock.MatchedBy(func(ids []uuid.UUID) bool {
-		sortUUIDs(ids)
-		return assert.ElementsMatch(t, ids, missingPostIDs)
-	})).Return(likedPostIDs, missingPostIDs, nil)
-
-	postRepoMock.On("GetLikesByPostIDs", ctx, userID, missingPostIDs).Return(likedPostIDs, nil)
-	memoryCacheRepoMock.On("SetLikesByPostIDs", ctx, userID, likedPostIDs).Return(nil)
-
-	memoryCacheRepoMock.On("SetPost", ctx, userID, repoFeedResponse, 1, 10).Return(nil)
-
-	result, err := postService.GetPosts(ctx, 1, 10)
-
-	assert.NoError(t, err)
-	assert.Equal(t, repoFeedResponse, result)
-	memoryCacheRepoMock.AssertExpectations(t)
-	contextServiceMock.AssertExpectations(t)
-	postRepoMock.AssertExpectations(t)
-}
-
-func TestGetPosts_CacheError_StillFetchesFromRepository(t *testing.T) {
-	ctx := context.Background()
-	postRepoMock := new(mocks.PostRepository)
-	contextServiceMock := new(mocks.ContextService)
-	memoryCacheRepoMock := new(mocks.MemoryCacheRepository)
-
-	postService := &postService{
-		postRepository:        postRepoMock,
-		contextService:        contextServiceMock,
-		memoryCacheRepository: memoryCacheRepoMock,
-	}
-
-	userID := uuid.New()
-	repoFeed := &domain.Pagination[*domain.PostResponse]{Page: 1, Limit: 10}
-
-	contextServiceMock.On("GetUserID", ctx).Return(userID)
-	memoryCacheRepoMock.On("GetPosts", ctx, userID, 1, 10).Return(nil, errors.New("cache error"))
-	postRepoMock.On("GetPaginatedPosts", ctx, userID, 1, 10).Return(repoFeed, nil)
-
-	result, err := postService.GetPosts(ctx, 1, 10)
-
-	assert.NoError(t, err)
-	assert.Equal(t, repoFeed, result)
-	memoryCacheRepoMock.AssertExpectations(t)
-	contextServiceMock.AssertExpectations(t)
-	postRepoMock.AssertExpectations(t)
-}
-
-func TestGetPosts_RepositoryError_ReturnsError(t *testing.T) {
-	ctx := context.Background()
-	postRepoMock := new(mocks.PostRepository)
-	contextServiceMock := new(mocks.ContextService)
-	memoryCacheRepoMock := new(mocks.MemoryCacheRepository)
-
-	postService := &postService{
-		postRepository:        postRepoMock,
-		contextService:        contextServiceMock,
-		memoryCacheRepository: memoryCacheRepoMock,
-	}
-
-	userID := uuid.New()
-
-	contextServiceMock.On("GetUserID", ctx).Return(userID)
-	memoryCacheRepoMock.On("GetPosts", ctx, userID, 1, 10).Return(nil, nil)
-	postRepoMock.On("GetPaginatedPosts", ctx, userID, 1, 10).Return(nil, errors.New("repository error"))
-
-	result, err := postService.GetPosts(ctx, 1, 10)
-
-	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cache error")
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "repository error")
-	memoryCacheRepoMock.AssertExpectations(t)
+	cacheMock.AssertExpectations(t)
 	contextServiceMock.AssertExpectations(t)
-	postRepoMock.AssertExpectations(t)
 }
 
-func TestGetPosts_SetCacheError_ReturnsRepositoryFeed(t *testing.T) {
+func TestGetPosts_WhenSuccessFromRepositoryAndSetCache_ShouldReturnPosts(t *testing.T) {
 	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
 	postRepoMock := new(mocks.PostRepository)
 	contextServiceMock := new(mocks.ContextService)
-	memoryCacheRepoMock := new(mocks.MemoryCacheRepository)
 
 	postService := &postService{
+		memoryCacheRepository: cacheMock,
 		postRepository:        postRepoMock,
 		contextService:        contextServiceMock,
-		memoryCacheRepository: memoryCacheRepoMock,
 	}
 
 	userID := uuid.New()
-	repoFeed := &domain.Pagination[*domain.PostResponse]{Page: 1, Limit: 10}
+	page, limit := 1, 10
+	pagedPosts := &domain.Pagination[*domain.Post]{}
 
 	contextServiceMock.On("GetUserID", ctx).Return(userID)
-	memoryCacheRepoMock.On("GetPosts", ctx, userID, 1, 10).Return(nil, nil)
-	postRepoMock.On("GetPaginatedPosts", ctx, userID, 1, 10).Return(repoFeed, nil)
-	memoryCacheRepoMock.On("SetPost", ctx, userID, repoFeed, 1, 10).Return(errors.New("cache set error"))
+	cacheMock.On("GetPosts", ctx, userID, page, limit).Return(nil, nil)
+	postRepoMock.On("GetPaginatedPosts", ctx, userID, page, limit).Return(pagedPosts, nil)
+	cacheMock.On("SetPost", ctx, userID, mock.Anything, page, limit).Return(nil)
 
-	result, err := postService.GetPosts(ctx, 1, 10)
+	result, err := postService.GetPosts(ctx, page, limit)
 
 	assert.NoError(t, err)
-	assert.Equal(t, repoFeed, result)
-	memoryCacheRepoMock.AssertExpectations(t)
-	contextServiceMock.AssertExpectations(t)
+	assert.NotNil(t, result)
+	cacheMock.AssertExpectations(t)
 	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestGetPosts_WhenRepositoryError_ShouldReturnError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		postRepository:        postRepoMock,
+		contextService:        contextServiceMock,
+	}
+
+	userID := uuid.New()
+	page, limit := 1, 10
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("GetPosts", ctx, userID, page, limit).Return(nil, nil)
+	postRepoMock.On("GetPaginatedPosts", ctx, userID, page, limit).Return(nil, errors.New("repository error"))
+
+	result, err := postService.GetPosts(ctx, page, limit)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "repository error")
+	assert.Nil(t, result)
+	cacheMock.AssertExpectations(t)
+	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestGetPosts_WhenNoPostsFound_ShouldReturnErrPostNotFound(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		postRepository:        postRepoMock,
+		contextService:        contextServiceMock,
+	}
+
+	userID := uuid.New()
+	page, limit := 1, 10
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("GetPosts", ctx, userID, page, limit).Return(nil, nil)
+	postRepoMock.On("GetPaginatedPosts", ctx, userID, page, limit).Return(nil, nil)
+
+	result, err := postService.GetPosts(ctx, page, limit)
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.ErrPostNotFound, err)
+	assert.Nil(t, result)
+	cacheMock.AssertExpectations(t)
+	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestGetPosts_WhenSetCacheError_ShouldReturnError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		postRepository:        postRepoMock,
+		contextService:        contextServiceMock,
+	}
+
+	userID := uuid.New()
+	page, limit := 1, 10
+	pagedPosts := &domain.Pagination[*domain.Post]{}
+	pagedPostsResponse := &domain.Pagination[*domain.PostResponse]{
+		Limit:      0,
+		Page:       0,
+		Sort:       "",
+		TotalRows:  0,
+		TotalPages: 0,
+		Rows:       []*domain.PostResponse{},
+	}
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("GetPosts", ctx, userID, page, limit).Return(nil, nil)
+	postRepoMock.On("GetPaginatedPosts", ctx, userID, page, limit).Return(pagedPosts, nil)
+	cacheMock.On("SetPost", ctx, userID, pagedPostsResponse, page, limit).Return(errors.New("cache set error"))
+
+	result, err := postService.GetPosts(ctx, page, limit)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cache set error")
+	assert.Nil(t, result)
+	cacheMock.AssertExpectations(t)
+	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestGetPostById_PostNotFound_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	postID := uuid.New()
+	postRepoMock.On("GetPostById", ctx, postID, true).Return(nil, nil)
+
+	result, err := postService.GetPostById(ctx, postID)
+
+	assert.ErrorIs(t, err, domain.ErrPostNotFound)
+	assert.Nil(t, result)
+	postRepoMock.AssertExpectations(t)
+}
+
+func TestGetPostById_RepositoryError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	postID := uuid.New()
+	postRepoMock.On("GetPostById", ctx, postID, true).Return(nil, errors.New("repository error"))
+
+	result, err := postService.GetPostById(ctx, postID)
+
+	assert.ErrorContains(t, err, "repository error")
+	assert.Nil(t, result)
+	postRepoMock.AssertExpectations(t)
+}
+
+func TestGetPostById_LikeCheckError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+	post := &domain.Post{
+		ID:       postID,
+		AuthorID: userID,
+	}
+
+	postRepoMock.On("GetPostById", ctx, postID, true).Return(post, nil)
+	likeRepoMock.On("UserLikedPost", ctx, postID, userID).Return(false, errors.New("like check error"))
+
+	result, err := postService.GetPostById(ctx, postID)
+
+	assert.ErrorContains(t, err, "like check error")
+	assert.Nil(t, result)
+	postRepoMock.AssertExpectations(t)
+	likeRepoMock.AssertExpectations(t)
+}
+
+func TestGetPostById_PostFoundAndLiked_ReturnsPostWithLike(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+	post := &domain.Post{
+		ID:       postID,
+		AuthorID: userID,
+	}
+
+	postRepoMock.On("GetPostById", ctx, postID, true).Return(post, nil)
+	likeRepoMock.On("UserLikedPost", ctx, postID, userID).Return(true, nil)
+
+	result, err := postService.GetPostById(ctx, postID)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, postID, result.ID)
+	assert.True(t, result.LikesByUser)
+	postRepoMock.AssertExpectations(t)
+	likeRepoMock.AssertExpectations(t)
+}
+
+func TestGetPostById_PostFoundNotLiked_ReturnsPostWithoutLike(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+	post := &domain.Post{
+		ID:       postID,
+		AuthorID: userID,
+	}
+
+	postRepoMock.On("GetPostById", ctx, postID, true).Return(post, nil)
+	likeRepoMock.On("UserLikedPost", ctx, postID, userID).Return(false, nil)
+
+	result, err := postService.GetPostById(ctx, postID)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, postID, result.ID)
+	assert.False(t, result.LikesByUser)
+	postRepoMock.AssertExpectations(t)
+	likeRepoMock.AssertExpectations(t)
+}
+
+func TestUpdatePost_PostNotFound_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+	payload := domain.PostUpdatePayload{}
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(nil, nil)
+
+	err := postService.UpdatePost(ctx, postID, payload)
+
+	assert.ErrorIs(t, err, domain.ErrPostNotFound)
+	postRepoMock.AssertExpectations(t)
+}
+
+func TestUpdatePost_GetPostByIdRepositoryError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+	payload := domain.PostUpdatePayload{}
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(nil, errors.New("repository error"))
+
+	err := postService.UpdatePost(ctx, postID, payload)
+
+	assert.ErrorContains(t, err, "repository error")
+	postRepoMock.AssertExpectations(t)
+}
+
+func TestUpdatePost_PostNotBelongToUser_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+	otherUserID := uuid.New()
+	payload := domain.PostUpdatePayload{}
+	post := &domain.Post{AuthorID: otherUserID}
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(post, nil)
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+
+	err := postService.UpdatePost(ctx, postID, payload)
+
+	assert.ErrorIs(t, err, domain.ErrPostNotBelongToUser)
+	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestUpdatePost_UpdatePostRepositoryError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+	payload := domain.PostUpdatePayload{}
+	post := &domain.Post{AuthorID: userID}
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(post, nil)
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	postRepoMock.On("UpdatePost", ctx, postID, *post).Return(errors.New("repository update error"))
+
+	err := postService.UpdatePost(ctx, postID, payload)
+
+	assert.ErrorContains(t, err, "repository update error")
+	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestUpdatePost_Success(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+	payload := domain.PostUpdatePayload{}
+	post := &domain.Post{AuthorID: userID}
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(post, nil)
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	postRepoMock.On("UpdatePost", ctx, postID, *post).Return(nil)
+
+	err := postService.UpdatePost(ctx, postID, payload)
+
+	assert.NoError(t, err)
+	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestDeletePost_PostNotFound_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(nil, nil)
+
+	err := postService.DeletePost(ctx, postID)
+
+	assert.ErrorIs(t, err, domain.ErrPostNotFound)
+	postRepoMock.AssertExpectations(t)
+}
+
+func TestDeletePost_GetPostByIdRepositoryError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(nil, errors.New("repository error"))
+
+	err := postService.DeletePost(ctx, postID)
+
+	assert.ErrorContains(t, err, "repository error")
+	postRepoMock.AssertExpectations(t)
+}
+
+func TestDeletePost_PostNotBelongToUser_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+	otherUserID := uuid.New()
+	post := &domain.Post{AuthorID: otherUserID}
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(post, nil)
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+
+	err := postService.DeletePost(ctx, postID)
+
+	assert.ErrorIs(t, err, domain.ErrPostNotBelongToUser)
+	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestDeletePost_DeletePostRepositoryError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+	post := &domain.Post{AuthorID: userID}
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(post, nil)
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	postRepoMock.On("DeletePost", ctx, postID).Return(errors.New("delete error"))
+
+	err := postService.DeletePost(ctx, postID)
+
+	assert.ErrorContains(t, err, "delete error")
+	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestDeletePost_Success(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	contextServiceMock := new(mocks.ContextService)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		contextService: contextServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+	post := &domain.Post{AuthorID: userID}
+
+	postRepoMock.On("GetPostById", ctx, postID, false).Return(post, nil)
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	postRepoMock.On("DeletePost", ctx, postID).Return(nil)
+
+	err := postService.DeletePost(ctx, postID)
+
+	assert.NoError(t, err)
+	postRepoMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestGetByUserID_SessionNotFound_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	userID := uuid.New()
+
+	postsResponse, err := postService.GetByUserID(ctx, userID)
+
+	assert.ErrorIs(t, err, domain.ErrSessionNotFound)
+	assert.Nil(t, postsResponse)
+	postRepoMock.AssertNotCalled(t, "GetByUserID", mock.Anything, mock.Anything)
+	likeRepoMock.AssertNotCalled(t, "GetLikedPostIDs", mock.Anything, mock.Anything)
+}
+
+func TestGetByUserID_GetByUserIDRepositoryError_ReturnsError(t *testing.T) {
+	session := &domain.Session{UserID: uuid.New()}
+	ctx := context.WithValue(context.Background(), domain.SessionKey, session)
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	userID := uuid.New()
+
+	postRepoMock.On("GetByUserID", ctx, userID).Return(nil, errors.New("repository error"))
+
+	postsResponse, err := postService.GetByUserID(ctx, userID)
+
+	assert.ErrorContains(t, err, "repository error")
+	assert.Nil(t, postsResponse)
+	postRepoMock.AssertExpectations(t)
+	likeRepoMock.AssertNotCalled(t, "GetLikedPostIDs", mock.Anything, mock.Anything)
+}
+
+func TestGetByUserID_PostsNotFound_ReturnsError(t *testing.T) {
+	session := &domain.Session{UserID: uuid.New()}
+	ctx := context.WithValue(context.Background(), domain.SessionKey, session)
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	userID := uuid.New()
+
+	postRepoMock.On("GetByUserID", ctx, userID).Return(nil, nil)
+
+	postsResponse, err := postService.GetByUserID(ctx, userID)
+
+	assert.ErrorIs(t, err, domain.ErrPostNotFound)
+	assert.Nil(t, postsResponse)
+	postRepoMock.AssertExpectations(t)
+	likeRepoMock.AssertNotCalled(t, "GetLikedPostIDs", mock.Anything, mock.Anything)
+}
+
+func TestGetByUserID_GetLikedPostIDsError_ReturnsError(t *testing.T) {
+	session := &domain.Session{UserID: uuid.New()}
+	ctx := context.WithValue(context.Background(), domain.SessionKey, session)
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	userID := uuid.New()
+	posts := []*domain.Post{{ID: uuid.New()}}
+
+	postRepoMock.On("GetByUserID", ctx, userID).Return(posts, nil)
+	likeRepoMock.On("GetLikedPostIDs", ctx, session.UserID).Return(nil, errors.New("like repository error"))
+
+	postsResponse, err := postService.GetByUserID(ctx, userID)
+
+	assert.ErrorContains(t, err, "like repository error")
+	assert.Nil(t, postsResponse)
+	postRepoMock.AssertExpectations(t)
+	likeRepoMock.AssertExpectations(t)
+}
+
+func TestGetByUserID_Success_ReturnsPostsWithLikes(t *testing.T) {
+	session := &domain.Session{UserID: uuid.New()}
+	ctx := context.WithValue(context.Background(), domain.SessionKey, session)
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	userID := uuid.New()
+	postID := uuid.New()
+	posts := []*domain.Post{{ID: postID}}
+	likedPostIDs := map[uuid.UUID]bool{postID: true}
+
+	postRepoMock.On("GetByUserID", ctx, userID).Return(posts, nil)
+	likeRepoMock.On("GetLikedPostIDs", ctx, session.UserID).Return(likedPostIDs, nil)
+
+	postsResponse, err := postService.GetByUserID(ctx, userID)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, postsResponse)
+	assert.Len(t, postsResponse, 1)
+	assert.True(t, postsResponse[0].LikesByUser)
+	postRepoMock.AssertExpectations(t)
+	likeRepoMock.AssertExpectations(t)
+}
+
+func TestGetByUserID_Success_ReturnsPostsWithoutLikes(t *testing.T) {
+	session := &domain.Session{UserID: uuid.New()}
+	ctx := context.WithValue(context.Background(), domain.SessionKey, session)
+	postRepoMock := new(mocks.PostRepository)
+	likeRepoMock := new(mocks.LikeRepository)
+
+	postService := &postService{
+		postRepository: postRepoMock,
+		likeRepository: likeRepoMock,
+	}
+
+	userID := uuid.New()
+	postID := uuid.New()
+	posts := []*domain.Post{{ID: postID}}
+	likedPostIDs := map[uuid.UUID]bool{}
+
+	postRepoMock.On("GetByUserID", ctx, userID).Return(posts, nil)
+	likeRepoMock.On("GetLikedPostIDs", ctx, session.UserID).Return(likedPostIDs, nil)
+
+	postsResponse, err := postService.GetByUserID(ctx, userID)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, postsResponse)
+	assert.Len(t, postsResponse, 1)
+	assert.False(t, postsResponse[0].LikesByUser)
+	postRepoMock.AssertExpectations(t)
+	likeRepoMock.AssertExpectations(t)
+}
+
+func TestLikePost_Success(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	done := make(chan bool)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("SetPostLike", ctx, postID, userID).Return(nil)
+	queueServiceMock.On("Publish", config.QueueLikePost, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		done <- true
+	})
+
+	err := postService.LikePost(ctx, postID)
+
+	<-done
+
+	assert.NoError(t, err)
+	cacheMock.AssertExpectations(t)
+	queueServiceMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestLikePost_CacheError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("SetPostLike", ctx, postID, userID).Return(errors.New("cache error"))
+
+	err := postService.LikePost(ctx, postID)
+
+	assert.ErrorContains(t, err, "cache error")
+	cacheMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestLikePost_QueuePublishError_LogError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+	done := make(chan bool)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("SetPostLike", ctx, postID, userID).Return(nil)
+	queueServiceMock.On("Publish", config.QueueLikePost, mock.Anything).Return(errors.New("publish error")).Run(func(args mock.Arguments) {
+		done <- true
+	})
+
+	err := postService.LikePost(ctx, postID)
+
+	<-done
+
+	assert.NoError(t, err)
+	cacheMock.AssertExpectations(t)
+	queueServiceMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestUnlikePost_Success(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	done := make(chan bool)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("RemovePostLike", ctx, postID, userID).Return(nil)
+	queueServiceMock.On("Publish", config.QueueUnlikePost, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		done <- true
+	})
+
+	err := postService.UnlikePost(ctx, postID)
+
+	<-done
+
+	assert.NoError(t, err)
+	cacheMock.AssertExpectations(t)
+	queueServiceMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestUnlikePost_CacheError_ReturnsError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("RemovePostLike", ctx, postID, userID).Return(errors.New("cache error"))
+
+	err := postService.UnlikePost(ctx, postID)
+
+	assert.ErrorContains(t, err, "cache error")
+	cacheMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
+}
+
+func TestUnlikePost_QueuePublishError_LogError(t *testing.T) {
+	ctx := context.Background()
+	cacheMock := new(mocks.MemoryCacheRepository)
+	contextServiceMock := new(mocks.ContextService)
+	queueServiceMock := new(mocks.QueueService)
+
+	done := make(chan bool)
+
+	postService := &postService{
+		memoryCacheRepository: cacheMock,
+		contextService:        contextServiceMock,
+		queueService:          queueServiceMock,
+	}
+
+	postID := uuid.New()
+	userID := uuid.New()
+
+	contextServiceMock.On("GetUserID", ctx).Return(userID)
+	cacheMock.On("RemovePostLike", ctx, postID, userID).Return(nil)
+	queueServiceMock.On("Publish", config.QueueUnlikePost, mock.Anything).Return(errors.New("publish error")).Run(func(args mock.Arguments) {
+		done <- true
+	})
+
+	err := postService.UnlikePost(ctx, postID)
+
+	<-done
+
+	assert.NoError(t, err)
+	cacheMock.AssertExpectations(t)
+	queueServiceMock.AssertExpectations(t)
+	contextServiceMock.AssertExpectations(t)
 }

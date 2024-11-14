@@ -30,3 +30,19 @@ func GenerateSuggestions(username string, count int) []string {
 
 	return suggestions
 }
+
+func GetKeysFromMap[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func ConvertToMap[K comparable](ids []K) map[K]bool {
+	m := make(map[K]bool, len(ids))
+	for _, id := range ids {
+		m[id] = true
+	}
+	return m
+}

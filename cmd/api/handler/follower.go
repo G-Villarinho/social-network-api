@@ -5,18 +5,19 @@ import (
 	"net/http"
 
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/google/uuid"
+
 	"github.com/labstack/echo/v4"
 )
 
 type followerHandler struct {
-	di              *pkg.Di
+	di              *internal.Di
 	followerService domain.FollowerService
 }
 
-func NewFollowerHandler(di *pkg.Di) (domain.FollowerHandler, error) {
-	followerService, err := pkg.Invoke[domain.FollowerService](di)
+func NewFollowerHandler(di *internal.Di) (domain.FollowerHandler, error) {
+	followerService, err := internal.Invoke[domain.FollowerService](di)
 	if err != nil {
 		return nil, err
 	}

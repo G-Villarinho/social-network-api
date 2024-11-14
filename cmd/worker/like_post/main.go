@@ -9,7 +9,9 @@ import (
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/database"
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg" // ajuste conforme necessário
+	"github.com/G-Villarinho/social-network/internal"
+
+	// ajuste conforme necessário
 	"github.com/G-Villarinho/social-network/repository"
 	"github.com/G-Villarinho/social-network/service"
 	"github.com/go-redis/redis/v8"
@@ -21,7 +23,7 @@ func main() {
 	config.ConfigureLogger()
 	config.LoadEnvironments()
 
-	di := pkg.NewDi()
+	di := internal.NewDi()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -36,11 +38,11 @@ func main() {
 		log.Fatal("error to connect to redis: ", err)
 	}
 
-	pkg.Provide(di, func(d *pkg.Di) (*gorm.DB, error) {
+	internal.Provide(di, func(d *internal.Di) (*gorm.DB, error) {
 		return db, nil
 	})
 
-	pkg.Provide(di, func(d *pkg.Di) (*redis.Client, error) {
+	internal.Provide(di, func(d *internal.Di) (*redis.Client, error) {
 		return redisClient, nil
 	})
 
@@ -57,25 +59,32 @@ func main() {
 		}
 	}()
 
-	pkg.Provide(di, func(d *pkg.Di) (client.RabbitMQClient, error) {
+	internal.Provide(di, func(d *internal.Di) (client.RabbitMQClient, error) {
 		return rabbitMQClient, nil
 	})
 
-	pkg.Provide(di, service.NewContextService)
-	pkg.Provide(di, service.NewPostService)
-	pkg.Provide(di, service.NewQueueService)
-	pkg.Provide(di, service.NewSessionService)
+	internal.Provide(di, service.NewContextService)
+	internal.Provide(di, service.NewPostService)
+	internal.Provide(di, service.NewQueueService)
+	internal.Provide(di, service.NewSessionService)
+	internal.Provide(di, service.NewLikeService)
 
-	pkg.Provide(di, repository.NewMemoryCacheRepository)
-	pkg.Provide(di, repository.NewPostRepository)
-	pkg.Provide(di, repository.NewSessionRepository)
+	internal.Provide(di, repository.NewMemoryCacheRepository)
+	internal.Provide(di, repository.NewPostRepository)
+	internal.Provide(di, repository.NewSessionRepository)
+	internal.Provide(di, repository.NewLikeRepository)
 
-	postService, err := pkg.Invoke[domain.PostService](di)
+	postService, err := internal.Invoke[domain.PostService](di)
 	if err != nil {
 		log.Fatal("error to create post service: ", err)
 	}
 
-	queueService, err := pkg.Invoke[domain.QueueService](di)
+	likeService, err := internal.Invoke[domain.LikeService](di)
+	if err != nil {
+		log.Fatal("error to create like service: ", err)
+	}
+
+	queueService, err := internal.Invoke[domain.QueueService](di)
 	if err != nil {
 		log.Fatal("error to create queue service: ", err)
 	}
@@ -93,8 +102,20 @@ func main() {
 				continue
 			}
 
-			if err := postService.ProcessLikePost(context.Background(), payload); err != nil {
-				log.Println("error processing like post: ", err)
+			post, err := postService.GetPostById(context.Background(), payload.PostID)
+			if err != nil {
+				log.Println("error getting post by ID: ", err)
+				continue
+			}
+
+			if post == nil {
+				log.Printf("post not found: %s", payload.PostID)
+				continue
+			}
+
+			if err := likeService.CreateLike(context.Background(), payload); err != nil {
+				log.Println("error creating like: ", err)
+				continue
 			}
 
 			log.Printf("like post processed: %s", payload.PostID)

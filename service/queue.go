@@ -5,17 +5,18 @@ import (
 
 	"github.com/G-Villarinho/social-network/client"
 	"github.com/G-Villarinho/social-network/config"
+	"github.com/G-Villarinho/social-network/internal"
+
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
 )
 
 type queueService struct {
-	di             *pkg.Di
+	di             *internal.Di
 	rabbitMQClient client.RabbitMQClient
 }
 
-func NewQueueService(di *pkg.Di) (domain.QueueService, error) {
-	rabbitMQClient, err := pkg.Invoke[client.RabbitMQClient](di)
+func NewQueueService(di *internal.Di) (domain.QueueService, error) {
+	rabbitMQClient, err := internal.Invoke[client.RabbitMQClient](di)
 	if err != nil {
 		return nil, err
 	}

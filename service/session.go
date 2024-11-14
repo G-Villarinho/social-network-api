@@ -6,19 +6,20 @@ import (
 
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
+
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 )
 
 type sessionService struct {
-	di                *pkg.Di
+	di                *internal.Di
 	sessionRepository domain.SessionRepository
 }
 
-func NewSessionService(di *pkg.Di) (domain.SessionService, error) {
-	sessionRepository, err := pkg.Invoke[domain.SessionRepository](di)
+func NewSessionService(di *internal.Di) (domain.SessionService, error) {
+	sessionRepository, err := internal.Invoke[domain.SessionRepository](di)
 	if err != nil {
 		return nil, err
 	}

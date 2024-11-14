@@ -4,13 +4,14 @@ import (
 	"log"
 
 	"github.com/G-Villarinho/social-network/domain"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/G-Villarinho/social-network/middleware"
-	"github.com/G-Villarinho/social-network/pkg"
+
 	"github.com/labstack/echo/v4"
 )
 
-func setupUserRoutes(e *echo.Echo, di *pkg.Di) {
-	userHandler, err := pkg.Invoke[domain.UserHandler](di)
+func setupUserRoutes(e *echo.Echo, di *internal.Di) {
+	userHandler, err := internal.Invoke[domain.UserHandler](di)
 	if err != nil {
 		log.Fatal("error to create user handler: ", err)
 	}

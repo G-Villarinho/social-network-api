@@ -12,7 +12,7 @@ import (
 	"github.com/G-Villarinho/social-network/cmd/api/router"
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/database"
-	"github.com/G-Villarinho/social-network/pkg" // ajuste conforme necessário
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/G-Villarinho/social-network/repository"
 	"github.com/G-Villarinho/social-network/service"
 	"github.com/go-redis/redis/v8"
@@ -26,7 +26,7 @@ func main() {
 	config.LoadEnvironments()
 
 	e := echo.New()
-	di := pkg.NewDi()
+	di := internal.NewDi()
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: `{"time":"${time_rfc3339_nano}","method":"${method}","uri":"${uri}","status":${status},"latency":"${latency_human}"}`,
@@ -56,11 +56,11 @@ func main() {
 		log.Fatal("error to connect to redis: ", err)
 	}
 
-	pkg.Provide(di, func(d *pkg.Di) (*gorm.DB, error) {
+	internal.Provide(di, func(d *internal.Di) (*gorm.DB, error) {
 		return db, nil
 	})
 
-	pkg.Provide(di, func(d *pkg.Di) (*redis.Client, error) {
+	internal.Provide(di, func(d *internal.Di) (*redis.Client, error) {
 		return redisClient, nil
 	})
 
@@ -77,26 +77,30 @@ func main() {
 		}
 	}()
 
-	pkg.Provide(di, func(d *pkg.Di) (client.RabbitMQClient, error) {
+	internal.Provide(di, func(d *internal.Di) (client.RabbitMQClient, error) {
 		return rabbitMQClient, nil
 	})
 
-	pkg.Provide(di, handler.NewFollowerHandler)
-	pkg.Provide(di, handler.NewPostHandler)
-	pkg.Provide(di, handler.NewUserHandler)
+	internal.Provide(di, handler.NewFeedHandler)
+	internal.Provide(di, handler.NewFollowerHandler)
+	internal.Provide(di, handler.NewPostHandler)
+	internal.Provide(di, handler.NewUserHandler)
 
-	pkg.Provide(di, service.NewContextService)
-	pkg.Provide(di, service.NewFollowerService)
-	pkg.Provide(di, service.NewPostService)
-	pkg.Provide(di, service.NewQueueService)
-	pkg.Provide(di, service.NewSessionService)
-	pkg.Provide(di, service.NewUserService)
+	internal.Provide(di, service.NewContextService)
+	internal.Provide(di, service.NewFeedService)
+	internal.Provide(di, service.NewFollowerService)
+	internal.Provide(di, service.NewLikeService)
+	internal.Provide(di, service.NewPostService)
+	internal.Provide(di, service.NewQueueService)
+	internal.Provide(di, service.NewSessionService)
+	internal.Provide(di, service.NewUserService)
 
-	pkg.Provide(di, repository.NewFollowerRepository)
-	pkg.Provide(di, repository.NewMemoryCacheRepository)
-	pkg.Provide(di, repository.NewPostRepository)
-	pkg.Provide(di, repository.NewSessionRepository)
-	pkg.Provide(di, repository.NewUserRepository)
+	internal.Provide(di, repository.NewFollowerRepository)
+	internal.Provide(di, repository.NewLikeRepository)
+	internal.Provide(di, repository.NewMemoryCacheRepository)
+	internal.Provide(di, repository.NewPostRepository)
+	internal.Provide(di, repository.NewSessionRepository)
+	internal.Provide(di, repository.NewUserRepository)
 
 	router.SetupRoutes(e, di)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", config.Env.APIPort)))

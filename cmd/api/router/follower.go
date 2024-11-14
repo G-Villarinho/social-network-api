@@ -4,13 +4,14 @@ import (
 	"log"
 
 	"github.com/G-Villarinho/social-network/domain"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/G-Villarinho/social-network/middleware"
-	"github.com/G-Villarinho/social-network/pkg"
+
 	"github.com/labstack/echo/v4"
 )
 
-func setupFollowerRoutes(e *echo.Echo, di *pkg.Di) {
-	followerHandler, err := pkg.Invoke[domain.FollowerHandler](di)
+func setupFollowerRoutes(e *echo.Echo, di *internal.Di) {
+	followerHandler, err := internal.Invoke[domain.FollowerHandler](di)
 	if err != nil {
 		log.Fatal("error to create follower handler: ", err)
 	}

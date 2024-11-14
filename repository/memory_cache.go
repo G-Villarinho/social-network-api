@@ -7,19 +7,19 @@ import (
 
 	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
-	"github.com/G-Villarinho/social-network/pkg"
+	"github.com/G-Villarinho/social-network/internal"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 )
 
 type memoryCacheRepository struct {
-	di          *pkg.Di
+	di          *internal.Di
 	redisClient *redis.Client
 }
 
-func NewMemoryCacheRepository(di *pkg.Di) (domain.MemoryCacheRepository, error) {
-	redisClient, err := pkg.Invoke[*redis.Client](di)
+func NewMemoryCacheRepository(di *internal.Di) (domain.MemoryCacheRepository, error) {
+	redisClient, err := internal.Invoke[*redis.Client](di)
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +66,9 @@ func (m *memoryCacheRepository) GetPosts(ctx context.Context, userID uuid.UUID, 
 
 	JSON, err := m.redisClient.Get(ctx, getPostCacheKey(userID, page, limit)).Result()
 	if err != nil {
+		if err == redis.Nil {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -76,29 +79,28 @@ func (m *memoryCacheRepository) GetPosts(ctx context.Context, userID uuid.UUID, 
 	return posts, nil
 }
 
-func (m *memoryCacheRepository) GetCachedAndMissingLikes(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) ([]uuid.UUID, []uuid.UUID, error) {
-	var likedPostIDs []uuid.UUID
-	var missingPostIDs []uuid.UUID
+func (m *memoryCacheRepository) GetCachedLikes(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) (*domain.LikeCache, error) {
+	likeCache := new(domain.LikeCache)
 
 	for _, postID := range postIDs {
 		key := getLikeCacheKey(postID, userID)
 		liked, err := m.redisClient.Get(ctx, key).Result()
 
 		if err == redis.Nil {
-			missingPostIDs = append(missingPostIDs, postID)
+			likeCache.MissingLikes = append(likeCache.MissingLikes, postID)
 			continue
 		}
 
 		if err != nil {
-			return nil, nil, err
+			return nil, fmt.Errorf("error fetching from cache: %w", err)
 		}
 
 		if liked == "liked" {
-			likedPostIDs = append(likedPostIDs, postID)
+			likeCache.CachedLikes = append(likeCache.CachedLikes, postID)
 		}
 	}
 
-	return likedPostIDs, missingPostIDs, nil
+	return likeCache, nil
 }
 
 func (m *memoryCacheRepository) SetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) error {

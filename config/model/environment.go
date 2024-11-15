@@ -3,16 +3,18 @@ package model
 import "crypto/ecdsa"
 
 type Environment struct {
-	PrivateKey        *ecdsa.PrivateKey
-	PublicKey         *ecdsa.PublicKey
-	Redis             RedisEnvironment
-	CloudFlare        CloudFlareEnvironment
-	Cache             CacheEnvironment
-	AvatarPlaceholder string `env:"AVATAR_PLACEHOLDER"`
-	RabbitMQURL       string `env:"RABBITMQ_URL"`
-	APIPort           string `env:"API_PORT"`
-	ConnectionString  string `env:"CONNECTION_STRING"`
-	FrontURL          string `env:"FRONT_URL"`
+	PrivateKey          *ecdsa.PrivateKey
+	PublicKey           *ecdsa.PublicKey
+	Redis               RedisEnvironment
+	CloudFlare          CloudFlareEnvironment
+	Cache               CacheEnvironment
+	MaileSenderApiToken string `env:"MAILERSEND_API_TOKEN"`
+	EmailSender         string `env:"EMAIL_SENDER"`
+	AvatarPlaceholder   string `env:"AVATAR_PLACEHOLDER"`
+	RabbitMQURL         string `env:"RABBITMQ_URL"`
+	APIPort             string `env:"API_PORT"`
+	ConnectionString    string `env:"CONNECTION_STRING"`
+	FrontURL            string `env:"FRONT_URL"`
 }
 
 type RedisEnvironment struct {

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/G-Villarinho/social-network/config"
+	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/mocks"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +15,7 @@ func TestQueueService_Publish_Success(t *testing.T) {
 		rabbitMQClient: rabbitMQMock,
 	}
 
-	queueName := config.QueueLikePost
+	queueName := domain.QueueLikePost
 	message := []byte("test message")
 
 	rabbitMQMock.On("Publish", queueName, message).Return(nil)
@@ -32,7 +32,7 @@ func TestQueueService_Publish_Failure(t *testing.T) {
 		rabbitMQClient: rabbitMQMock,
 	}
 
-	queueName := config.QueueLikePost
+	queueName := domain.QueueLikePost
 	message := []byte("test message")
 
 	rabbitMQMock.On("Publish", queueName, message).Return(errors.New("publish error"))

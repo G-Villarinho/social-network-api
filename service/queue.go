@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/G-Villarinho/social-network/client"
-	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/internal"
 
 	"github.com/G-Villarinho/social-network/domain"
@@ -28,8 +27,8 @@ func NewQueueService(di *internal.Di) (domain.QueueService, error) {
 }
 
 func (q *queueService) Publish(queueName string, message []byte) error {
-	if err := q.rabbitMQClient.Publish(config.QueueLikePost, message); err != nil {
-		return fmt.Errorf("error publishing message to queue: %w", err)
+	if err := q.rabbitMQClient.Publish(queueName, message); err != nil {
+		return fmt.Errorf("publishing message to queue: %w", err)
 	}
 
 	return nil
@@ -38,7 +37,7 @@ func (q *queueService) Publish(queueName string, message []byte) error {
 func (q *queueService) Consume(queueName string) (<-chan []byte, error) {
 	messages, err := q.rabbitMQClient.Consume(queueName)
 	if err != nil {
-		return nil, fmt.Errorf("error consuming message from queue: %w", err)
+		return nil, fmt.Errorf("consuming message from queue: %w", err)
 	}
 
 	return messages, nil

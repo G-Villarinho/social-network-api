@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/internal"
 
@@ -216,7 +215,7 @@ func (p *postService) LikePost(ctx context.Context, ID uuid.UUID) error {
 			return
 		}
 
-		if err := p.queueService.Publish(config.QueueLikePost, message); err != nil {
+		if err := p.queueService.Publish(domain.QueueLikePost, message); err != nil {
 			log.Error("error to publish like event", slog.String("error", err.Error()))
 		}
 	}()
@@ -243,7 +242,7 @@ func (p *postService) UnlikePost(ctx context.Context, ID uuid.UUID) error {
 			return
 		}
 
-		if err := p.queueService.Publish(config.QueueUnlikePost, message); err != nil {
+		if err := p.queueService.Publish(domain.QueueUnlikePost, message); err != nil {
 			log.Error("error to publish unlike event", slog.String("error", err.Error()))
 		}
 	}()

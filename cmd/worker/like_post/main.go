@@ -90,7 +90,7 @@ func main() {
 	}
 
 	for {
-		messages, err := queueService.Consume(config.QueueLikePost)
+		messages, err := queueService.Consume(domain.QueueLikePost)
 		if err != nil {
 			log.Fatal("error to consume message from queue: ", err)
 		}

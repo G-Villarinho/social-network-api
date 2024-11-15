@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/G-Villarinho/social-network/config"
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/mocks"
 	"github.com/google/uuid"
@@ -725,7 +724,7 @@ func TestLikePost_Success(t *testing.T) {
 
 	contextServiceMock.On("GetUserID", ctx).Return(userID)
 	cacheMock.On("SetPostLike", ctx, postID, userID).Return(nil)
-	queueServiceMock.On("Publish", config.QueueLikePost, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+	queueServiceMock.On("Publish", domain.QueueLikePost, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 		done <- true
 	})
 
@@ -782,7 +781,7 @@ func TestLikePost_QueuePublishError_LogError(t *testing.T) {
 
 	contextServiceMock.On("GetUserID", ctx).Return(userID)
 	cacheMock.On("SetPostLike", ctx, postID, userID).Return(nil)
-	queueServiceMock.On("Publish", config.QueueLikePost, mock.Anything).Return(errors.New("publish error")).Run(func(args mock.Arguments) {
+	queueServiceMock.On("Publish", domain.QueueLikePost, mock.Anything).Return(errors.New("publish error")).Run(func(args mock.Arguments) {
 		done <- true
 	})
 
@@ -815,7 +814,7 @@ func TestUnlikePost_Success(t *testing.T) {
 
 	contextServiceMock.On("GetUserID", ctx).Return(userID)
 	cacheMock.On("RemovePostLike", ctx, postID, userID).Return(nil)
-	queueServiceMock.On("Publish", config.QueueUnlikePost, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+	queueServiceMock.On("Publish", domain.QueueUnlikePost, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 		done <- true
 	})
 
@@ -873,7 +872,7 @@ func TestUnlikePost_QueuePublishError_LogError(t *testing.T) {
 
 	contextServiceMock.On("GetUserID", ctx).Return(userID)
 	cacheMock.On("RemovePostLike", ctx, postID, userID).Return(nil)
-	queueServiceMock.On("Publish", config.QueueUnlikePost, mock.Anything).Return(errors.New("publish error")).Run(func(args mock.Arguments) {
+	queueServiceMock.On("Publish", domain.QueueUnlikePost, mock.Anything).Return(errors.New("publish error")).Run(func(args mock.Arguments) {
 		done <- true
 	})
 

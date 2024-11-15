@@ -31,7 +31,7 @@ func NewMemoryCacheRepository(di *internal.Di) (domain.MemoryCacheRepository, er
 }
 
 func (m *memoryCacheRepository) SetPostLike(ctx context.Context, postID uuid.UUID, userID uuid.UUID) error {
-	if err := m.redisClient.Set(ctx, getLikeCacheKey(postID, userID), "liked", time.Duration(config.Env.CacheExp)*time.Minute).Err(); err != nil {
+	if err := m.redisClient.Set(ctx, getLikeCacheKey(postID, userID), "liked", time.Duration(config.Env.Cache.CacheExp)*time.Minute).Err(); err != nil {
 		return err
 	}
 
@@ -53,7 +53,7 @@ func (m *memoryCacheRepository) SetPost(ctx context.Context, userID uuid.UUID, p
 	}
 
 	if err := m.redisClient.
-		Set(ctx, getPostCacheKey(userID, page, limit), JSON, time.Duration(config.Env.CacheExp)*time.Minute).
+		Set(ctx, getPostCacheKey(userID, page, limit), JSON, time.Duration(config.Env.Cache.CacheExp)*time.Minute).
 		Err(); err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (m *memoryCacheRepository) GetCachedLikes(ctx context.Context, userID uuid.
 func (m *memoryCacheRepository) SetLikesByPostIDs(ctx context.Context, userID uuid.UUID, postIDs []uuid.UUID) error {
 	for _, postID := range postIDs {
 		key := getLikeCacheKey(postID, userID)
-		if err := m.redisClient.Set(ctx, key, "liked", time.Duration(config.Env.CacheExp)*time.Minute).Err(); err != nil {
+		if err := m.redisClient.Set(ctx, key, "liked", time.Duration(config.Env.Cache.CacheExp)*time.Minute).Err(); err != nil {
 			return err
 		}
 	}

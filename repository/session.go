@@ -45,7 +45,7 @@ func (s *sessionRepository) CreateSession(ctx context.Context, session domain.Se
 		return err
 	}
 
-	if err := s.redisClient.Set(ctx, s.getSessionKey(session.UserID.String()), sessionJSON, time.Duration(config.Env.SessionExp)*time.Hour).Err(); err != nil {
+	if err := s.redisClient.Set(ctx, s.getSessionKey(session.UserID.String()), sessionJSON, time.Duration(config.Env.Cache.SessionExp)*time.Hour).Err(); err != nil {
 		return err
 	}
 

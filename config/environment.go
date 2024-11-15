@@ -46,7 +46,7 @@ func loadPrivateKey() (*ecdsa.PrivateKey, error) {
 
 	block, _ := pem.Decode(keyData)
 	if block == nil || block.Type != "EC PRIVATE KEY" {
-		return nil, errors.New("failed to decode PEM block containing private key")
+		return nil, errors.New("error to decode PEM block containing private key")
 	}
 
 	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
@@ -65,7 +65,7 @@ func loadPublicKey() (*ecdsa.PublicKey, error) {
 
 	block, _ := pem.Decode(keyData)
 	if block == nil || block.Type != "PUBLIC KEY" {
-		return nil, errors.New("failed to decode PEM block containing public key")
+		return nil, errors.New("error to decode PEM block containing public key")
 	}
 
 	publicKey, err := x509.ParsePKIXPublicKey(block.Bytes)

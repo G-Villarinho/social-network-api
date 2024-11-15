@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/G-Villarinho/social-network/config"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -193,6 +194,7 @@ func (up *UserPayload) ToUser(passwordHash string) *User {
 		Username:  up.Username,
 		Email:     up.Email,
 		Password:  passwordHash,
+		Avatar:    config.Env.AvatarPlaceholder,
 	}
 }
 

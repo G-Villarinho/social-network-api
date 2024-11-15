@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"os"
 
-	model "github.com/G-Villarinho/social-network/config/models"
+	"github.com/G-Villarinho/social-network/config/model"
 	"github.com/Netflix/go-env"
 	"github.com/joho/godotenv"
 )

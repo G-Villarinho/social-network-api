@@ -33,27 +33,15 @@ lint:
 	@golangci-lint run ./...
 	@echo "Linter passed successfully"
 
-clean:
-	rm -f $(PRIVATE_KEY_FILE) $(PUBLIC_KEY_FILE)
-
 start:
 	@echo "Running API..."
 	go run cmd/api/main.go
 
-worker:
-	@echo "Running worker for upload images..."
-	go run cmd/worker/like_post/main.go
-	@echo "Worker stopped"
 	
 migrations:
 	@echo "Runnig migrations..."
 	go run database/migrations/main.go
 	@echo "migrations executed succefully"
-
-test:
-	@echo "Running tests..."
-	go test ./... -v
-	@echo "Tests completed successfully"
 
 e2e:
 	@echo "Runnig e2e tests"

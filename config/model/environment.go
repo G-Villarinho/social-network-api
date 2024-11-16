@@ -8,6 +8,7 @@ type Environment struct {
 	Redis               RedisEnvironment
 	CloudFlare          CloudFlareEnvironment
 	Cache               CacheEnvironment
+	IpStacker           IpStacker
 	MaileSenderApiToken string `env:"MAILERSEND_API_TOKEN"`
 	EmailSender         string `env:"EMAIL_SENDER"`
 	AvatarPlaceholder   string `env:"AVATAR_PLACEHOLDER"`
@@ -33,4 +34,9 @@ type CacheEnvironment struct {
 	CacheExp        int `env:"CACHE_EXP"`
 	Hash2FADuration int `env:"HASH_2FA_DURATION"`
 	Code2FADuration int `env:"CODE_2FA_DURATION"`
+}
+
+type IpStacker struct {
+	IpStackAPIKey  string `env:"IP_STACK_API_KEY"`
+	IpStackBaseURL string `env:"IP_STACK_BASE_URL"`
 }

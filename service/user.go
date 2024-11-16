@@ -3,18 +3,22 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/internal"
 	"github.com/G-Villarinho/social-network/secure"
 	"github.com/G-Villarinho/social-network/utils"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type userService struct {
-	di             *internal.Di
-	userRepository domain.UserRepository
-	sessionService domain.SessionService
-	contextService domain.ContextService
+	di                *internal.Di
+	userRepository    domain.UserRepository
+	queueService      domain.QueueService
+	clientInfoService domain.ClientInfoService
+	sessionService    domain.SessionService
+	contextService    domain.ContextService
 }
 
 func NewUserService(di *internal.Di) (domain.UserService, error) {
@@ -33,11 +37,23 @@ func NewUserService(di *internal.Di) (domain.UserService, error) {
 		return nil, err
 	}
 
+	queueService, err := internal.Invoke[domain.QueueService](di)
+	if err != nil {
+		return nil, err
+	}
+
+	clientInfoService, err := internal.Invoke[domain.ClientInfoService](di)
+	if err != nil {
+		return nil, err
+	}
+
 	return &userService{
-		di:             di,
-		userRepository: userRepository,
-		sessionService: sessionService,
-		contextService: contextService,
+		di:                di,
+		userRepository:    userRepository,
+		sessionService:    sessionService,
+		contextService:    contextService,
+		queueService:      queueService,
+		clientInfoService: clientInfoService,
 	}, nil
 }
 
@@ -93,6 +109,25 @@ func (u *userService) SignIn(ctx context.Context, payload domain.SignInPayload) 
 	if err != nil {
 		return "", err
 	}
+
+	go func() {
+		clientInfo, err := u.clientInfoService.GetClientInfo(ctx)
+		if err != nil {
+			slog.Error("get client info", slog.String("error", err.Error()))
+			return
+		}
+
+		message, err := jsoniter.Marshal(getEmailNotificationTask(user, *clientInfo))
+		if err != nil {
+			slog.Error("marshal email task event", slog.String("error", err.Error()))
+			return
+		}
+
+		if err := u.queueService.Publish(domain.QueueSendEmail, message); err != nil {
+			slog.Error("publish email event", slog.String("error", err.Error()))
+			return
+		}
+	}()
 
 	return token, nil
 }
@@ -189,4 +224,21 @@ func (u *userService) CheckUsername(ctx context.Context, payload domain.CheckUse
 	}
 
 	return nil, nil
+}
+
+func getEmailNotificationTask(user *domain.User, clientInfo domain.ClientInfoResponse) domain.EmailPayloadTask {
+	return domain.EmailPayloadTask{
+		Template: domain.SignInNotification,
+		Subject:  "New Sign-In Detected",
+		Recipient: domain.Recipient{
+			Name:  fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+			Email: user.Email,
+		},
+		Params: map[string]string{
+			"name":      fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+			"device":    clientInfo.Device,
+			"location":  clientInfo.Location,
+			"date_time": clientInfo.LoginTime,
+		},
+	}
 }

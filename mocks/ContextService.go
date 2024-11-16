@@ -16,6 +16,62 @@ type ContextService struct {
 	mock.Mock
 }
 
+// GetClientIP provides a mock function with given fields: ctx
+func (_m *ContextService) GetClientIP(ctx context.Context) (string, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetClientIP")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (string, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) string); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetUserAgent provides a mock function with given fields: ctx
+func (_m *ContextService) GetUserAgent(ctx context.Context) (string, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserAgent")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (string, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) string); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetUserID provides a mock function with given fields: ctx
 func (_m *ContextService) GetUserID(ctx context.Context) uuid.UUID {
 	ret := _m.Called(ctx)

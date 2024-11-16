@@ -90,11 +90,12 @@ func (u *userHandler) SignIn(ctx echo.Context) error {
 
 	token, err := u.userService.SignIn(ctx.Request().Context(), payload)
 	if err != nil {
+		log.Error(err.Error())
+
 		if err == domain.ErrUserNotFound || err == domain.ErrInvalidPassword {
 			return domain.NewCustomValidationAPIErrorResponse(ctx, http.StatusUnauthorized, nil, "Unauthorized", "Invalid email or username and password. Please check your credentials and try again.")
 		}
 
-		log.Error(err.Error())
 		return domain.InternalServerAPIErrorResponse(ctx)
 	}
 

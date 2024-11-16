@@ -2,6 +2,13 @@ package domain
 
 import "context"
 
+type EmailTemplate string
+
+const (
+	OTP                EmailTemplate = "otp"
+	SignInNotification EmailTemplate = "sign-in-notification"
+)
+
 type EmailPayload struct {
 	From        string
 	FromName    string
@@ -16,15 +23,13 @@ type Recipient struct {
 	Email string
 }
 
-type SignInNotificationPayload struct {
-	Email     string
-	Name      string
-	Device    string
-	Location  string
-	LoginTime string
+type EmailPayloadTask struct {
+	Template  EmailTemplate
+	Subject   string
+	Recipient Recipient
+	Params    map[string]string
 }
 
 type EmailService interface {
-	SendOTP(ctx context.Context, email, name, otp string) error
-	SendSignInNotification(ctx context.Context, payload SignInNotificationPayload) error
+	SendEmail(ctx context.Context, payload EmailPayloadTask) error
 }

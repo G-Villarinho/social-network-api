@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/G-Villarinho/social-network/domain"
 	"github.com/G-Villarinho/social-network/internal"
@@ -31,4 +32,20 @@ func (c *contextService) GetUserID(ctx context.Context) uuid.UUID {
 	}
 
 	return session.UserID
+}
+
+func (c *contextService) GetUserAgent(ctx context.Context) (string, error) {
+	userAgent, ok := ctx.Value(domain.UserAgentKey).(string)
+	if !ok {
+		return "", errors.New("user-agent not found in context")
+	}
+	return userAgent, nil
+}
+
+func (c *contextService) GetClientIP(ctx context.Context) (string, error) {
+	clientIP, ok := ctx.Value(domain.ClientIPKey).(string)
+	if !ok {
+		return "", errors.New("client-ip not found in context")
+	}
+	return clientIP, nil
 }

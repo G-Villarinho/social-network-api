@@ -12,6 +12,8 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/json-iterator/go v1.1.12
 	github.com/labstack/echo/v4 v4.12.0
+	github.com/mailersend/mailersend-go v1.5.1
+	github.com/mssola/user_agent v0.6.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/samber/do v1.6.0
 	github.com/stretchr/testify v1.8.4
@@ -36,7 +38,6 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/mailersend/mailersend-go v1.5.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

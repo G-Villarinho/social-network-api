@@ -81,12 +81,16 @@ func main() {
 		return rabbitMQClient, nil
 	})
 
+	internal.Provide(di, client.NewMailerSendClient)
+
 	internal.Provide(di, handler.NewFeedHandler)
 	internal.Provide(di, handler.NewFollowerHandler)
 	internal.Provide(di, handler.NewPostHandler)
 	internal.Provide(di, handler.NewUserHandler)
 
 	internal.Provide(di, service.NewContextService)
+	internal.Provide(di, service.NewClientInfoService)
+	internal.Provide(di, service.NewEmailService)
 	internal.Provide(di, service.NewFeedService)
 	internal.Provide(di, service.NewFollowerService)
 	internal.Provide(di, service.NewLikeService)
